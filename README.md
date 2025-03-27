@@ -7,4 +7,4 @@
 # 联系方式
 - 个人邮箱: 2455688686@qq.com
 - 工作邮箱: 24110440034@m.fudan.edu.cn
-</p align="center">*In case I don't see you. Good afternoon, good evening, and good night.*</p>
+<center>*In case I don't see you. Good afternoon, good evening, and good night.*</center>

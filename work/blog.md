@@ -1,5 +1,5 @@
 # 目录
-[DFT教程](#dft计算粗略流程) [本地Gemma3](#本地gemma3使用) [slurm安装](#ubuntu-24.02-lts-单机slurm安装) [高斯报错](#高斯计算报错) [g16安装](#g16安装) [TEM数据处理与晶格测量](#tem晶格测量)
+[DFT教程](#dft计算粗略流程) [本地Gemma3](#本地gemma3使用) [slurm安装](#ubuntu-24.02-lts-单机slurm安装) [高斯报错](#高斯计算报错) [g16安装](#g16安装) [TEM数据处理与晶格测量](#tem晶格测量) [Origin设置](#origin设置) [Linux下GROMACS安装](#gromacs安装)
 
 # DFT计算粗略流程
 
@@ -174,3 +174,43 @@ Host yggroup-4070ti # 此项无所谓，只是个名字
 
     黑名单：
     - [http://cmjce.com/fwzx/zs/20191211/155.html](http://cmjce.com/fwzx/zs/20191211/155.html)   (这个教程不做FTT直接用Profile拉条线去测晶格间距，可靠性存疑，不推荐模仿)
+
+# Origin设置
+1. Crtl+J 复制图象到office软件中，使图形不发生缩放：
+```
+Preference -> System Variables ：ems = 0
+```
+
+2. Origin中调整画布大小时，字号会自动跟随缩放，但有个问题。缩放后的字号是小小数，但显示为取整的字号。这会造成了1字号范围内的差异。平时注意不到，细看会发现字号参差不齐。因此可以取消自动缩放：
+```
+Preference -> System Variables ：PSM = 100
+含义：当页面尺寸变化幅度<=PSM %时，文字字号不会自动变化。
+```
+
+# GROMACS安装
+1. 安装GROMACS(gmx)前，先准备cmake和fftw。
+2. cmake。不要直接用```sudo apt install cmake```因为下载下来是3.16版本，GROMACS 2024.5需要3.18以上。当然也可以考虑用低版本的GROMACS，但我看gmx官方的长期支持版就是2024。所以建议手动安装新版cmake。过程如下：
+```
+进入https://cmake.org/download/。选择合适的版本，确定下载链接。
+wget https://github.com/Kitware/CMake/releases/download/v4.0.1/cmake-4.0.1-linux-x86_64.tar.gz
+tar -xvf xxx/cmake-xxx.tar.gz
+cd xxx/cmake-xxx
+./bootstrap
+make
+sudo make install
+```
+一切操作都可以在用户目录下完成，因为make install 用了sudo，所以最后的cmake会在/usr/local/下完成安装，可公共使用，自己编辑一下环境变量即可。
+```
+export PATH=/usr/local/cmake-4.0.1-linux-x86_64/bin:$PATH
+```
+2. 安装fftw。可参考[博客](https://www.cnblogs.com/wcxia1985/p/17853846.html)
+但有几个大问题。我试了很多次，```make```和```sudo make insatll```都能正常运行，但/usr/local/下就是没有fftw执行文件。```which fftw```也找不到结果。但运行完一遍fftw的安装后，再运行gmx安装，就不会报错了，貌似gmx能找到不知道安装到哪里去了的fftw。
+
+3. gmx安装：参考[官方文档](https://manual.gromacs.org/2024.5/install-guide/index.html)，cmake一行记得把后面两个参数删掉，直接```cmake```即可。完毕后检查/usr/local/下是否有gromacs文件夹即可。然后配置环境：
+```
+export GMXBIN=/usr/local/gromacs/bin
+export GMXLIB=/usr/local/gromacs/lib
+export GMXDATA=/usr/local/gromacs/share/gromacs/top
+export PATH=/usr/local/gromacs/bin:$PATH
+```
+能which到gmx说明成功。

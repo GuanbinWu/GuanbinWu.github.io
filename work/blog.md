@@ -1,5 +1,5 @@
 # 目录
-[DFT教程](#dft计算粗略流程) [本地Gemma3](#本地gemma3使用) [slurm安装](#ubuntu-24.02-lts-单机slurm安装) [高斯报错](#高斯计算报错) [g16安装](#g16安装) [TEM数据处理与晶格测量](#tem晶格测量) [Origin设置](#origin设置) [Linux下GROMACS安装](#gromacs安装)
+[DFT教程](#dft计算粗略流程) [本地Gemma3](#本地gemma3使用) [slurm安装](#ubuntu-24.02-lts-单机slurm安装) [高斯报错](#高斯计算报错) [g16安装](#g16安装) [TEM数据处理与晶格测量](#tem晶格测量) [Origin设置](#origin设置) [Linux下GROMACS安装](#gromacs安装) [GROMAX运行与踩坑记录](#gromacs使用)
 
 # DFT计算粗略流程
 
@@ -214,3 +214,73 @@ export GMXDATA=/usr/local/gromacs/share/gromacs/top
 export PATH=/usr/local/gromacs/bin:$PATH
 ```
 能which到gmx说明成功。
+
+# GROMACS使用
+主要针对有机小分子溶液相混合问题。
+
+1. 材料文件生成：确定体系内有哪些分子，Gview里准备好各物种的mol2文件，用Multiwfn的RESP.sh脚本做chg文件，拿到原子电荷。参考[教程](http://sobereva.com/476)。
+
+2. 用Sobtop生成各分子拓扑文件。一个分子出三个文件。```.top```,```.itp```,```.gro```。参考[官方教程](http://sobereva.com/soft/Sobtop/#FAQ)
+在生成文件时，先选7指定chg，就可以自动加入原子电荷。具体地，每一步选哪个选项，Sob老师已经写了，忘了去查。
+
+3. 制作topol.top文件，记录整个混合系统的拓扑信息。几个关键点，一，要手动写[ default ]字段，二，记得将各itp文件的[ atom type]字段剪切到include之前并去重。
+
+4. 制作盒子。试过用pcakmol脚本做，但貌似做出来的分子顺序不太对，可能是我操作问题，后面再优化，这里记录一下用gmx制作盒子的过程。
+```
+gmx insert-molecules -ci mol1.gro -nmol 10 -box 10 10 10 -o box.gro 
+```
+这里已经自动加入了mol1了
+5. 加其他分子。
+```
+gmx insert-molecules -f box.gro -ci mol2.gro -nmol 10 -o new_box.gro 
+
+```
+重复之，使想要的分子均在盒子里。
+
+6. 水溶剂的引入教程遍地都是，但我们用得少，暂时没研究。盐的引入后面再考虑，走通了再写在这里。
+
+7. 能量最小化。
+```
+gmx grompp -f em.mdp -c ionized.gro -p topol.top -o em.tpr
+gmx mdrun -deffnm em
+```
+8. NVT与NPT
+```
+gmx grompp -f nvt.mdp -c em.gro -p topol.top -o nvt.tpr
+gmx mdrun -deffnm nvt
+```
+
+```
+gmx grompp -f npt.mdp -c nvt.gro -p topol.top -o npt.tpr
+gmx mdrun -deffnm npt
+```
+9. 生产模拟
+```
+gmx grompp -f md.mdp -c npt.gro -p topol.top -o md.tpr
+gmx mdrun -deffnm md
+```
+
+10. 几个问题：
+
+" The X-size of the box (6.655719) times the triclinic skew factor (1.000000) is smaller than the number of DD cells (8) times the smallest allowed cell size(0.833498)。"
+
+简单来讲，盒子太小、细分太高。
+
+扩大盒子尺寸：
+```
+gmx editconf -f box.gro -o new_box.gro -box 7 7 7
+```
+或降低DD单元格数目：
+```
+gmx mdrun -ntmpi 4
+```
+
+11. VMD可视化：
+
+加载gro文件后再加载trr轨迹文件即可。如果出现奇怪的条纹，说明周期性边界PBC设置不当。处理之。
+```
+gmx trjconv -s box.tpr -f box.trr -o box_fixed.trr -pbc mol -center # -pbc mol 保持每个分子整体不被切割，把主分子放到盒子中心。
+```
+
+12. 几个不涉及蛋白的教程，可参考：[一](https://www.x-mol.com/groups/Dong/news/2027) [二](https://zhuanlan.zhihu.com/p/571601988)
+13. 比较全面的中文教程，可惜集中于蛋白和多肽，供参考。[三](https://jerkwin.github.io/9999/10/31/GROMACS%E4%B8%AD%E6%96%87%E6%95%99%E7%A8%8B/)

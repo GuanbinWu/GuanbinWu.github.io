@@ -229,32 +229,39 @@ export PATH=/usr/local/gromacs/bin:$PATH
 ```
 gmx insert-molecules -ci mol1.gro -nmol 10 -box 10 10 10 -o box.gro 
 ```
-这里已经自动加入了mol1了
+这里已经自动加入了mol1了。
 5. 加其他分子。
 ```
 gmx insert-molecules -f box.gro -ci mol2.gro -nmol 10 -o new_box.gro 
 
 ```
+
 重复之，使想要的分子均在盒子里。
 
 6. 水溶剂的引入教程遍地都是，但我们用得少，暂时没研究。盐的引入后面再考虑，走通了再写在这里。
 
 7. 能量最小化。
+
 ```
 gmx grompp -f em.mdp -c ionized.gro -p topol.top -o em.tpr
 gmx mdrun -deffnm em
 ```
+
 8. NVT与NPT
+
+NVT：
+
 ```
 gmx grompp -f nvt.mdp -c em.gro -p topol.top -o nvt.tpr
 gmx mdrun -deffnm nvt
 ```
+NPT：
 
 ```
 gmx grompp -f npt.mdp -c nvt.gro -p topol.top -o npt.tpr
 gmx mdrun -deffnm npt
 ```
-9. 生产模拟
+9. 模拟
 ```
 gmx grompp -f md.mdp -c npt.gro -p topol.top -o md.tpr
 gmx mdrun -deffnm md

@@ -228,15 +228,15 @@ RESP.sh mol.mol2 0 1 gas
 在生成文件时，先选7指定chg，就可以自动加入原子电荷。具体地，每一步选哪个选项，Sob老师已经写了，忘了去查。
 
 ```
-指定chg：选7
+指定chg：选 7 10
 
-产生gro文件：选2
+产生gro文件：选 2
 
 产生itp文件：选 1 2 4
 
 ```
 
-3. 制作topol.top文件，记录整个混合系统的拓扑信息。几个关键点，一，要手动写[ default ]字段，二，记得将各itp文件的[ atom type]字段剪切到include之前并去重。
+3. 制作topol.top文件，记录整个混合系统的拓扑信息。几个关键点，一，要手动写[ default ]字段，二，记得将各itp文件的[ atom type]字段剪切到include之前并去重。记得对每个分子重新规定Resname。不然后面分组讨论出数据时无法指定到具体分子。
 
 4. 制作盒子。试过用pcakmol脚本做，但貌似做出来的分子顺序不太对，可能是我操作问题，后面再优化，这里记录一下用gmx制作盒子的过程。
 
@@ -250,17 +250,18 @@ gmx insert-molecules -ci mol1.gro -nmol 10 -box 10 10 10 -o box.gro
 
 ```
 gmx insert-molecules -f box.gro -ci mol2.gro -nmol 10 -o new_box.gro 
-
 ```
 
 重复之，使想要的分子均在盒子里。
 
 6. 水溶剂的引入教程遍地都是，但我们用得少，暂时没研究。盐的引入后面再考虑，走通了再写在这里。
 
+补充：KPF6为例，直接用sobtop做出拓扑文件。用RESP.sh计算PF6-阴离子的原子电荷，手动copy到KPF6.itp文件里，K电荷为+1。然后以加入分子的形式加入KPF6。
+
 7. 能量最小化。
 
 ```
-gmx grompp -f em.mdp -c ionized.gro -p topol.top -o em.tpr
+gmx grompp -f em.mdp -c box.gro -p topol.top -o em.tpr
 gmx mdrun -deffnm em
 ```
 
@@ -304,12 +305,45 @@ gmx editconf -f box.gro -o new_box.gro -box 7 7 7
 gmx mdrun -ntmpi 4
 ```
 
+```
+gmx dump -s md.tpr > 1.txt
+# 查看盒子大小
+```
+
 11. VMD可视化：
 
 加载gro文件后再加载trr轨迹文件即可。如果出现奇怪的条纹，说明周期性边界PBC设置不当。处理之。
 ```
-gmx trjconv -s box.tpr -f box.trr -o box_fixed.trr -pbc mol -center # -pbc mol 保持每个分子整体不被切割，把主分子放到盒子中心。
+gmx trjconv -s md.tpr -f md.trr -o md_fixed.trr -pbc mol -center 
+
+# -pbc mol 保持每个分子整体不被切割，把主分子放到盒子中心。
 ```
+
+13. RDF分析
+（1）做索引文件：
+
+```
+gmx make_ndx -f md.tpr -o index.ndx
+```
+（2）RDF:
+
+```
+gmx rdf -f md.xtc -s md.tpr -n index.ndx -o rdf.xvg -cn rdf_cn.xvg -bin 0.01 -b 1000 -e 2000 -rmax 10 -ref "name 1" -sel  "name2"
+
+#-f md.xtc：指定轨迹文件。 没有xtc用trr
+#-s md.tpr：指定参数文件。
+#-n index.ndx：指定索引文件，定义了感兴趣的原子组。
+#-o rdf.xvg：输出RDF结果文件。
+#-cn rdf_cn.xvg：输出配位数结果文件。
+#-bin 0.01：设置RDF的bin宽度（nm）。
+#-b 1000：设置计算开始时间（ps）。
+#-e 2000：设置计算结束时间（ps）。
+#-rmax 1：最大半径（nm）。
+```
+
+
 
 12. 几个不涉及蛋白的教程，可参考：[一](https://www.x-mol.com/groups/Dong/news/2027) [二](https://zhuanlan.zhihu.com/p/571601988)
 13. 比较全面的中文教程，可惜集中于蛋白和多肽，供参考。[三](https://jerkwin.github.io/9999/10/31/GROMACS%E4%B8%AD%E6%96%87%E6%95%99%E7%A8%8B/)
+14. 出RDF数据教程参考：
+[1](https://manual.gromacs.org/current/onlinehelp/gmx-rdf.html) [2](http://bbs.keinsci.com/thread-6962-1-1.html) [3](http://bbs.keinsci.com/thread-7508-1-1.html) 

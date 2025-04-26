@@ -220,17 +220,34 @@ export PATH=/usr/local/gromacs/bin:$PATH
 
 1. 材料文件生成：确定体系内有哪些分子，Gview里准备好各物种的mol2文件，用Multiwfn的RESP.sh脚本做chg文件，拿到原子电荷。参考[教程](http://sobereva.com/476)。
 
+```
+RESP.sh mol.mol2 0 1 gas
+```
+
 2. 用Sobtop生成各分子拓扑文件。一个分子出三个文件。```.top```,```.itp```,```.gro```。参考[官方教程](http://sobereva.com/soft/Sobtop/#FAQ)
 在生成文件时，先选7指定chg，就可以自动加入原子电荷。具体地，每一步选哪个选项，Sob老师已经写了，忘了去查。
+
+```
+指定chg：选7
+
+产生gro文件：选2
+
+产生itp文件：选 1 2 4
+
+```
 
 3. 制作topol.top文件，记录整个混合系统的拓扑信息。几个关键点，一，要手动写[ default ]字段，二，记得将各itp文件的[ atom type]字段剪切到include之前并去重。
 
 4. 制作盒子。试过用pcakmol脚本做，但貌似做出来的分子顺序不太对，可能是我操作问题，后面再优化，这里记录一下用gmx制作盒子的过程。
+
 ```
 gmx insert-molecules -ci mol1.gro -nmol 10 -box 10 10 10 -o box.gro 
 ```
+
 这里已经自动加入了mol1了。
+
 5. 加其他分子。
+
 ```
 gmx insert-molecules -f box.gro -ci mol2.gro -nmol 10 -o new_box.gro 
 
@@ -251,17 +268,22 @@ gmx mdrun -deffnm em
 
 NVT：
 
+
 ```
 gmx grompp -f nvt.mdp -c em.gro -p topol.top -o nvt.tpr
 gmx mdrun -deffnm nvt
 ```
+
 NPT：
+
 
 ```
 gmx grompp -f npt.mdp -c nvt.gro -p topol.top -o npt.tpr
 gmx mdrun -deffnm npt
 ```
+
 9. 模拟
+
 ```
 gmx grompp -f md.mdp -c npt.gro -p topol.top -o md.tpr
 gmx mdrun -deffnm md

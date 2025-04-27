@@ -1,5 +1,5 @@
 # 目录
-[DFT教程](#dft计算粗略流程) [本地Gemma3](#本地gemma3使用) [slurm安装](#ubuntu-24.02-lts-单机slurm安装) [高斯报错](#高斯计算报错) [g16安装](#g16安装) [TEM数据处理与晶格测量](#tem晶格测量) [Origin设置](#origin设置) [Linux下GROMACS安装](#gromacs安装) [GROMAX运行与踩坑记录](#gromacs使用)
+[DFT教程](#dft计算粗略流程) [本地Gemma3](#本地gemma3使用) [slurm安装](#ubuntu-24.02-lts-单机slurm安装) [高斯报错](#高斯计算报错) [g16安装](#g16安装) [TEM数据处理与晶格测量](#tem晶格测量) [Origin设置](#origin设置) [Linux下GROMACS安装](#gromacs安装) [GROMACS运行与踩坑记录](#gromacs使用)
 
 # DFT计算粗略流程
 
@@ -319,7 +319,29 @@ gmx trjconv -s md.tpr -f md.trr -o md_fixed.trr -pbc mol -center
 # -pbc mol 保持每个分子整体不被切割，把主分子放到盒子中心。
 ```
 
-13. RDF分析
+
+12. 输出一般数据，判断体系是否到达稳态，可据此调整步长和时间。
+
+（1）体系能量：
+
+```
+gmx energy -f md.edr -o min-energy.xvg
+```
+
+（2）体系密度：
+
+```
+gmx density -s topol.tpr -f md.trr
+```
+
+（3）RMSD 均方根偏差：
+
+```
+gmx rms -s topol.tpr -f traj.xtc -o rmsd.xvg
+```
+
+13. RDF分析。rmax和cut-off保持一致会比较好（个人直觉）。起止时间根据上一条体系到达稳态来确定。
+
 （1）做索引文件：
 
 ```
@@ -328,7 +350,7 @@ gmx make_ndx -f md.tpr -o index.ndx
 （2）RDF:
 
 ```
-gmx rdf -f md.xtc -s md.tpr -n index.ndx -o rdf.xvg -cn rdf_cn.xvg -bin 0.01 -b 1000 -e 2000 -rmax 10 -ref "name 1" -sel  "name2"
+gmx rdf -f md.xtc -s md.tpr -n index.ndx -o rdf.xvg -cn rdf_cn.xvg -bin 0.01 -b 1000 -e 2000 -rmax 1
 
 #-f md.xtc：指定轨迹文件。 没有xtc用trr
 #-s md.tpr：指定参数文件。

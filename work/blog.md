@@ -314,9 +314,10 @@ gmx dump -s md.tpr > 1.txt
 
 加载gro文件后再加载trr轨迹文件即可。如果出现奇怪的条纹，说明周期性边界PBC设置不当。处理之。
 ```
-gmx trjconv -s md.tpr -f md.trr -o md_fixed.trr -pbc mol -center 
+gmx trjconv -s md.tpr -f md.trr -o md.trr -pbc mol -center 
 
 # -pbc mol 保持每个分子整体不被切割，把主分子放到盒子中心。
+# 补充：应当在md模拟完之后便做此修正，后续输出数据用修正后的trr
 ```
 
 

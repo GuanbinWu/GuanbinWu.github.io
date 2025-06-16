@@ -1,6 +1,8 @@
 # 目录
 [DFT教程](#dft计算粗略流程) [本地Gemma3](#本地gemma3使用) [slurm安装](#ubuntu-24.02-lts-单机slurm安装) [高斯报错](#高斯计算报错) [g16安装](#g16安装) [TEM数据处理与晶格测量](#tem晶格测量) [Origin设置](#origin设置) [Linux下GROMACS安装](#gromacs安装) [GROMACS运行与踩坑记录](#gromacs使用)
 
+！！！DFT教程更新到另一个文档了，点击[跳转](https://guanbinwu.github.io/work/g16.html)
+
 # DFT计算粗略流程
 
 #### 总流程

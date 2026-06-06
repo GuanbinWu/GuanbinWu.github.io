@@ -206,7 +206,7 @@ sudo make install
 export PATH=/usr/local/cmake-4.0.1-linux-x86_64/bin:$PATH
 ```
 2. 安装fftw。可参考[博客](https://www.cnblogs.com/wcxia1985/p/17853846.html)
-但有几个大问题。我试了很多次，```make```和```sudo make insatll```都能正常运行，但/usr/local/下就是没有fftw执行文件。```which fftw```也找不到结果。但运行完一遍fftw的安装后，再运行gmx安装，就不会报错了，貌似gmx能找到不知道安装到哪里去了的fftw。
+但有几个大问题。我试了很多次，```make```和```sudo make insatll```都能正常运行，但/usr/local/下就是没有fftw执行文件。```which fftw```也找不到结果。但运行完一遍fftw的安装后，再运行gmx安装，就不会报错了，貌似gmx能找到不知道安装到哪里去了的fftw。(补充：gmx安装时会自动安装fftw)
 
 3. gmx安装：参考[官方文档](https://manual.gromacs.org/2024.5/install-guide/index.html)，cmake一行记得把后面两个参数删掉，直接```cmake```即可。完毕后检查/usr/local/下是否有gromacs文件夹即可。然后配置环境：
 ```
@@ -238,12 +238,12 @@ RESP.sh mol.mol2 0 1 gas
 
 ```
 
-3. 制作topol.top文件，记录整个混合系统的拓扑信息。几个关键点，一，要手动写[ default ]字段，二，记得将各itp文件的[ atom type]字段剪切到include之前并去重。记得对每个分子重新规定Resname。不然后面分组讨论出数据时无法指定到具体分子。
+3. 制作topol.top文件，记录整个混合系统的拓扑信息。几个关键点，一，要手动写[ default ]字段，具体参数要与使用的力场一致。二，将各itp文件的[ atom type]字段剪切到include之前并去重。对每个分子重新规定Resname。不然后面分组讨论出数据时无法指定到具体分子。
 
-4. 制作盒子。试过用pcakmol脚本做，但貌似做出来的分子顺序不太对，可能是我操作问题，后面再优化，这里记录一下用gmx制作盒子的过程。
+4. 制作盒子。用gmx制作盒子的过程。
 
 ```
-gmx insert-molecules -ci mol1.gro -nmol 10 -box 10 10 10 -o box.gro 
+gmx insert-molecules -ci mol.gro -nmol 10 -box 10 10 10 -o box.gro 
 ```
 
 这里已经自动加入了mol1了。
@@ -260,36 +260,40 @@ gmx insert-molecules -f box.gro -ci mol2.gro -nmol 10 -o new_box.gro
 
 补充：KPF6为例，直接用sobtop做出拓扑文件。用RESP.sh计算PF6-阴离子的原子电荷，手动copy到KPF6.itp文件里，K电荷为+1。然后以加入分子的形式加入KPF6。
 
+补充：如果需要离子能够解离，应该对阴阳离子分别做itp文件，并在阴离子的itp文件里删去所有与阳离子有关的力场参数。
+
+补充：随之而来的问题是，分别做itp文件，insert_molecules时自然就会均匀分布，如果希望初始时保持阴阳离子紧密结合的结构，可以手动改原来的盐的gro文件，这样可以维持初始坐标，但拓扑定义却是两个物种。
+
 7. 能量最小化。
 
 ```
 gmx grompp -f em.mdp -c box.gro -p topol.top -o em.tpr
 gmx mdrun -deffnm em
 ```
+mdp文件参考sob老师的模板，主要关注最小化方法(steep，cg...)，步长，步数，Fmax以及约束方式。
 
 8. NVT与NPT
 
 NVT：
 
-
 ```
 gmx grompp -f nvt.mdp -c em.gro -p topol.top -o nvt.tpr
-gmx mdrun -deffnm nvt
+gmx mdrun -v -deffnm nvt
 ```
+NVT与NPT的区别就是是否开控压。
 
 NPT：
 
-
 ```
 gmx grompp -f npt.mdp -c nvt.gro -p topol.top -o npt.tpr
-gmx mdrun -deffnm npt
+gmx mdrun -v -deffnm npt
 ```
 
 9. 模拟
 
 ```
 gmx grompp -f md.mdp -c npt.gro -p topol.top -o md.tpr
-gmx mdrun -deffnm md
+gmx mdrun -v -deffnm md
 ```
 
 10. 几个问题：
@@ -312,11 +316,21 @@ gmx dump -s md.tpr > 1.txt
 # 查看盒子大小
 ```
 
+```
+gmx mdrun -v -deffnm -nb cpu -bonded cpu -pme cpu #全程强制使用CPU计算，便于cuda报错时排查原因。
+```
+
 11. VMD可视化：
 
 加载gro文件后再加载trr轨迹文件即可。如果出现奇怪的条纹，说明周期性边界PBC设置不当。处理之。
 ```
-gmx trjconv -s md.tpr -f md.trr -o md.trr -pbc mol -center 
+#如何将某个group平移到盒子中心？
+gmx trjconv -s md.tpr -f md.trr -o md.trr -pbc cluster -center
+#选择期望的group即可，但这样做完之后，依然不会改善条纹问题，所以再做一步-pbc mol是必要的。
+```
+
+```
+gmx trjconv -s md.tpr -f md.trr -o md.trr -pbc mol 
 
 # -pbc mol 保持每个分子整体不被切割，把主分子放到盒子中心。
 # 补充：应当在md模拟完之后便做此修正，后续输出数据用修正后的trr
@@ -328,27 +342,38 @@ gmx trjconv -s md.tpr -f md.trr -o md.trr -pbc mol -center
 （1）体系能量：
 
 ```
-gmx energy -f md.edr -o min-energy.xvg
+gmx energy -f md.edr -o energy.xvg
+# 2024.6版里，此命令后出现选择框，很多性质可一并输出。
 ```
 
 （2）体系密度：
 
 ```
-gmx density -s topol.tpr -f md.trr
+gmx density -s md.tpr -f md.trr
 ```
 
 （3）RMSD 均方根偏差：
 
 ```
-gmx rms -s topol.tpr -f traj.xtc -o rmsd.xvg
+gmx rms -s md.tpr -f md.trr -o rmsd.xvg
 ```
 
-13. RDF分析。rmax和cut-off保持一致会比较好（个人直觉）。起止时间根据上一条体系到达稳态来确定。
+（4）输出坐标：
+```
+gmx traj -s md.tpr -f md.trr -ox coords.xvg
+```
+上述命令均可加 -n index.ndx 使用定制化的索引文件。
+
+1.  RDF分析。起止时间根据上一条体系到达稳态来确定。
 
 （1）做索引文件：
 
 ```
 gmx make_ndx -f md.tpr -o index.ndx
+# 索引文件语法一例：
+# r MOL & t os
+# 意为选择resname==MOL 且 atomtype==os 的所有原子形成一个新的group
+# 期望的groups全部创建好后，q保存退出
 ```
 （2）RDF:
 
@@ -365,8 +390,6 @@ gmx rdf -f md.xtc -s md.tpr -n index.ndx -o rdf.xvg -cn rdf_cn.xvg -bin 0.01 -b 
 #-e 2000：设置计算结束时间（ps）。
 #-rmax 1：最大半径（nm）。
 ```
-
-
 
 12. 几个不涉及蛋白的教程，可参考：[一](https://www.x-mol.com/groups/Dong/news/2027) [二](https://zhuanlan.zhihu.com/p/571601988)
 13. 比较全面的中文教程，可惜集中于蛋白和多肽，供参考。[三](https://jerkwin.github.io/9999/10/31/GROMACS%E4%B8%AD%E6%96%87%E6%95%99%E7%A8%8B/)

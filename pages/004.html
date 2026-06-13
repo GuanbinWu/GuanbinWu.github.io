@@ -15,8 +15,21 @@
     body {
       margin: 0;
       background: #f6f8fa;
-      color: #24292f;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        color: #24292f;
+      font-family: "Georgia","Times New Roman","Times",serif;
+    }
+    code, pre {
+      font-family:
+        ui-monospace,
+        Consolas,
+        "Liberation Mono",
+        SFMono-Regular,
+        Menlo,
+        Monaco,
+        "Courier New",
+        monospace;
+      color: #1a1a1a;
+      font-size: 16px;
     }
 
     .page {
@@ -29,8 +42,8 @@
       background: #ffffff;
       padding: 48px 56px;
       border: 1px solid #d8dee4;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px #24292f;
+      border-radius: 6px;
+      box-shadow: 0 8px 12px #24292f;
       color: #1a1a1a;
     }
 
@@ -66,25 +79,39 @@
     }
 
     .markdown-body pre {
-      padding: 18px;
-      border-radius: 8px;
+      padding: 12px;
+      border-radius: 4px;
       overflow-x: auto;
-      color: #0c2d3d;
-      background: #0c2d3d;
+      background: #d6d6d6;
+      color: #1a1a1a;
+      font-size: 14px;
     }
     .markdown-body code:not(pre code) {
-    background: #0c2d3d;
-    color: #fffefc;
-    padding: 2px 6px;
+    background: #d6d6d6;
+    color: inherit;
+    padding: 1px 4px;
     border-radius: 4px;
-    font-size: 16px;
-    }
+    font-size: inherit;
+  }
 
     .markdown-body code {
-      font-size: 16px;
-      color: #fffefc;
+      font-size: inherit;
+      color:inherit;
+    }
+    .markdown-body pre code {
+      background: none;
+      padding: 0;
+      font-size: inherit;
+      color: inherit;
     }
 
+    .token.comment,
+    .hljs-comment,
+    .hljs-quote {
+      color: inherit !important;
+      font-style: normal !important;
+      opacity: 1 !important;
+    }
     @media (max-width: 720px) {
       .page {
         padding: 24px 14px 48px;
@@ -96,7 +123,7 @@
       }
 
       .markdown-body {
-        font-size: 15px;
+        font-size: 16px;
       }
     }
   </style>
@@ -108,8 +135,7 @@
       <h1>Gromacs安装与使用</h1>
 <h2>安装</h2>
 <p>参考教程：
-<a href="http://sobereva.com/457">sob老师的博客</a>
-使用GROMACS 2024.6，并配置GPU加速。</p>
+<a href="http://sobereva.com/457">思想家公社博客</a>。本次采用GROMACS 2024.6，并配置GPU加速。</p>
 <ol>
 <li>准备cmake。最好直接用<code>sudo apt install cmake</code>或<code>sudo dnf install cmake</code>。但需要小心版本，GROMACS 2024.6需要3.18以上。如果需要手动安装新版cmake。过程如下：
 进入https://cmake.org/download/。选择合适的版本，确定下载链接。</li>
@@ -178,23 +204,26 @@ gmx insert-molecules -ci mol.gro -nmol 10 [-box 10 10 10] -f old_box.gro -o box.
 <ol start="5">
 <li>显示溶剂的加入与加分子无差别。隐式溶剂的加入暂未考虑。离子的加入需要特殊说明。此处以KPF6为例。</li>
 </ol>
-<p>（1）直接用RESP.sh脚本算不了盐体系，只能算出净电荷数为-1的PF6-阴离子。自然地，K+净电荷+1。但实际上有机盐做DFT计算出的RESP，阳离子通常只有+0.7~+0.95的电荷。所以最好是手动算，然后用Multiwfn计算RESP电荷。Multiwfn脚本从RESP.sh里扒一下就行了。
-（2）DFT计算完，得到KPF6的log和fchk，gview获得mol2，Multiwfn算出chg，Sobtop算出gro，itp，top。这里的top没啥用，后面要做总的topol.top。
-（3）从KPF6的itp里拆分出K+和PF6-的itp。PF6-.itp里删去和K+有关的所有参数。这样在拓扑上，K+与阴离子就没有成键项了。同时由于以盐的形式计算DFT，获得的原子电荷不会是+1。接近真实情况。
-（4）根据研究的课题，有两种离子的插入方式。如果需要每一对阴阳离子保持紧密对结构，直接修改KPF6.gro里K的分子序号，原子序号，残基名即可。这样的gro维持了初始的盐的相对坐标。后续直接insert-molecules时，每个阴离子都在附近有阳离子。如果不关心这个问题，可以从KPF6.gro里拆出两个gro文件，再两次insert-molecules，可想而知，此时的阴阳离子都是均匀分布在盒子里的。
-6. 能量最小化。</p>
+<p>（1）直接用RESP.sh脚本算不了盐体系，只能算出净电荷数为-1的PF6-阴离子。自然地，K+净电荷+1。但实际上有机盐做DFT计算出的RESP，阳离子通常只有+0.7~+0.95的电荷。所以最好是手动算，然后用Multiwfn计算RESP电荷。Multiwfn脚本从RESP.sh里扒一下就行了。</p>
+<p>（2）DFT计算完，得到KPF6的log和fchk，gview获得mol2，Multiwfn算出chg，Sobtop算出gro，itp，top。这里的top没啥用，后面要做总的topol.top。</p>
+<p>（3）从KPF6的itp里拆分出K+和PF6-的itp。PF6-.itp里删去和K+有关的所有参数。这样在拓扑上，K+与阴离子就没有成键项了。同时由于以盐的形式计算DFT，获得的原子电荷不会是+1。接近真实情况。</p>
+<p>（4）根据研究的课题，有两种离子的插入方式。如果需要每一对阴阳离子保持紧密对结构，直接修改KPF6.gro里K的分子序号，原子序号，残基名即可。这样的gro维持了初始的盐的相对坐标。后续直接insert-molecules时，每个阴离子都在附近有阳离子。如果不关心这个问题，可以从KPF6.gro里拆出两个gro文件，再两次insert-molecules，可想而知，此时的阴阳离子都是均匀分布在盒子里的。</p>
+<ol start="6">
+<li>能量最小化。</li>
+</ol>
 <pre><code>gmx grompp -f em.mdp -c box.gro -p topol.top -o em.tpr
 gmx mdrun -deffnm em
 </code></pre>
 <p>mdp文件参考sob老师的模板，主要关注最小化方法(steep，cg...)，步长，步数，Fmax以及约束方式。
-em的时候，注意读输出，Fmax并不一定总是能按照你的设想收敛，如果em做完势能依然很高，却盲目往下走，很可能后面体系要炸。
-7. NVT与NPT
-NVT：</p>
+em的时候，注意读输出，Fmax并不一定总是能按照你的设想收敛，如果em做完势能依然很高，却盲目往下走，很可能后面体系要炸。</p>
+<ol start="7">
+<li>NVT与NPT</li>
+</ol>
+<p>NVT：</p>
 <pre><code>gmx grompp -f nvt.mdp -c em.gro -p topol.top -o nvt.tpr
 gmx mdrun -v -deffnm nvt
 </code></pre>
-<p>NVT与NPT的区别就是是否开控压。
-NPT：</p>
+<p>NVT与NPT的区别就是是否开控压。NPT：</p>
 <pre><code>gmx grompp -f npt.mdp -c nvt.gro -p topol.top -o npt.tpr
 gmx mdrun -v -deffnm npt
 </code></pre>
@@ -202,8 +231,7 @@ gmx mdrun -v -deffnm npt
 <li>几个问题：</li>
 </ol>
 <p>&quot; The X-size of the box (6.655719) times the triclinic skew factor (1.000000) is smaller than the number of DD cells (8) times the smallest allowed cell size(0.833498)。&quot;</p>
-<p>简单来讲，盒子太小、细分太高。</p>
-<p>扩大盒子尺寸：</p>
+<p>简单来讲，盒子太小、细分太高。扩大盒子尺寸：</p>
 <pre><code>gmx editconf -f box.gro -o new_box.gro -box 7 7 7
 </code></pre>
 <p>或降低DD单元格数目：</p>
@@ -268,10 +296,15 @@ gmx trjconv -s md.tpr -f md_center.trr -o md_fix.trr -pbc mol
 #-rmax 1：最大半径（nm）。
 </code></pre>
 <ol start="12">
-<li>几个不涉及蛋白的教程，可参考：<a href="https://www.x-mol.com/groups/Dong/news/2027">一</a> <a href="https://zhuanlan.zhihu.com/p/571601988">二</a></li>
-<li>比较全面的中文教程，可惜集中于蛋白和多肽，供参考。<a href="https://jerkwin.github.io/9999/10/31/GROMACS%E4%B8%AD%E6%96%87%E6%95%99%E7%A8%8B/">三</a></li>
-<li>出RDF数据教程参考：
-<a href="https://manual.gromacs.org/current/onlinehelp/gmx-rdf.html">1</a> <a href="http://bbs.keinsci.com/thread-6962-1-1.html">2</a> <a href="http://bbs.keinsci.com/thread-7508-1-1.html">3</a></li>
+<li>
+<p>几个不涉及蛋白的教程，可参考：<a href="https://www.x-mol.com/groups/Dong/news/2027">一</a> <a href="https://zhuanlan.zhihu.com/p/571601988">二</a></p>
+</li>
+<li>
+<p>比较全面的中文教程，可惜集中于蛋白和多肽，供参考。<a href="https://jerkwin.github.io/9999/10/31/GROMACS%E4%B8%AD%E6%96%87%E6%95%99%E7%A8%8B/">三</a></p>
+</li>
+<li>
+<p>出RDF数据教程参考：<a href="https://manual.gromacs.org/current/onlinehelp/gmx-rdf.html">1</a> <a href="http://bbs.keinsci.com/thread-6962-1-1.html">2</a> <a href="http://bbs.keinsci.com/thread-7508-1-1.html">3</a></p>
+</li>
 </ol>
 
     </article>

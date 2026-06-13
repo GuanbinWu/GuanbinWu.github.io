@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Origin设置</title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      background: #f6f8fa;
+      color: #24292f;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    .article {
+      background: #ffffff;
+      padding: 48px 56px;
+      border: 1px solid #d8dee4;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px #24292f;
+      color: #1a1a1a;
+    }
+
+    .markdown-body {
+      font-size: 16px;
+      line-height: 1.75;
+    }
+
+    .markdown-body h1 {
+      margin-top: 0;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid  #1a1a1a;
+      font-size: 2em;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h2 {
+      margin-top: 40px;
+      margin-bottom: 16px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h3 {
+      margin-top: 28px;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body p {
+      margin: 16px 0;
+      color: #1a1a1a;
+    }
+
+    .markdown-body pre {
+      padding: 18px;
+      border-radius: 8px;
+      overflow-x: auto;
+      color: #0c2d3d;
+      background: #0c2d3d;
+    }
+    .markdown-body code:not(pre code) {
+    background: #0c2d3d;
+    color: #fffefc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 16px;
+    }
+
+    .markdown-body code {
+      font-size: 16px;
+      color: #fffefc;
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 24px 14px 48px;
+      }
+
+      .article {
+        padding: 28px 22px;
+        border-radius: 8px;
+      }
+
+      .markdown-body {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <article class="markdown-body article">
+      <h1>Origin设置</h1>
+<ol>
+<li>Crtl+J 复制图象到office系列软件中，使图形不发生缩放：</li>
+</ol>
+<pre><code>Preference -&gt; System Variables ：ems = 0
+</code></pre>
+<ol start="2">
+<li>Origin中调整画布大小时，字号会自动跟随缩放，但有个问题。缩放后的字号是小小数，但显示为取整的字号。这会造成了1字号范围内的差异。平时注意不到，细看会发现字号参差不齐。因此可以取消自动缩放：</li>
+</ol>
+<pre><code>Preference -&gt; System Variables ：PSM = 100
+含义：当页面尺寸变化幅度&lt;=PSM %时，文字字号不会自动变化。
+默认值貌似是20，也就是说，当页面尺寸小于20%时，字体才不会自动变化。我们现在把PSM设置为100，也就意味着，缩小页面，字号一定不变，放大到两倍以上才会自动变。通常origin画图，默认出27cm宽画布，需要的动作只有缩小。
+</code></pre>
+<ol start="3">
+<li>完成ems和PSM的设置后，在origin里调好画布尺寸，设置好10字号，直接Ctrl+J复制到PPT里拼图，尺寸和字号无任何变化。</li>
+<li>ems和PSM设置是一劳永逸的，因为origin会写进注册表，只有重装系统以及License过期重装软件才需要重新设置。</li>
+</ol>
+
+    </article>
+  </main>
+</body>
+</html>

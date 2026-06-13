@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>本地Gemma3使用</title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      background: #f6f8fa;
+      color: #24292f;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    .article {
+      background: #ffffff;
+      padding: 48px 56px;
+      border: 1px solid #d8dee4;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px #24292f;
+      color: #1a1a1a;
+    }
+
+    .markdown-body {
+      font-size: 16px;
+      line-height: 1.75;
+    }
+
+    .markdown-body h1 {
+      margin-top: 0;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid  #1a1a1a;
+      font-size: 2em;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h2 {
+      margin-top: 40px;
+      margin-bottom: 16px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h3 {
+      margin-top: 28px;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body p {
+      margin: 16px 0;
+      color: #1a1a1a;
+    }
+
+    .markdown-body pre {
+      padding: 18px;
+      border-radius: 8px;
+      overflow-x: auto;
+      color: #0c2d3d;
+      background: #0c2d3d;
+    }
+    .markdown-body code:not(pre code) {
+    background: #0c2d3d;
+    color: #fffefc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 16px;
+    }
+
+    .markdown-body code {
+      font-size: 16px;
+      color: #fffefc;
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 24px 14px 48px;
+      }
+
+      .article {
+        padding: 28px 22px;
+        border-radius: 8px;
+      }
+
+      .markdown-body {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <article class="markdown-body article">
+      <h1>本地Gemma3使用</h1>
+<ol>
+<li>
+<p>由于暂时没时间配置网页API，需要通过VSCode，进入https://code.visualstudio.com/Download，选择适合自己电脑的版本下载并安装。（前几天研究了一下网站搭建。域名、备案啥的不是很难，但都挺麻烦，而且小贵，要是忘了挂备案号还可能进局子。暂时没功夫搞这个，性价比不高。等以后有钱有闲搞个人网站了再考虑搭建大模型接口吧，到时候给小范围的几个朋友用。现在这个github.io代理的静态博客上限1G，我尽量就只写文字了，以后可能会有个人网站，maybe。----2025.04.07）</p>
+</li>
+<li>
+<p>进入之后，安装SSH扩展，参考https://developer.aliyun.com/article/1626959。在安装SSH-Remote时，可顺便搜索&quot;Chinese(Simplified)&quot;，选第一个（作者是微软），安装后重启软件（右下角有重启提醒弹窗），可实现vscode界面全中文。</p>
+</li>
+<li>
+<p>按照教程进入SSH，注意将指令换为</p>
+</li>
+</ol>
+<pre><code>ssh username@ip # username和ip找我要
+</code></pre>
+<p>或者在ssh配置文件里新增：</p>
+<pre><code>Host yggroup-4070ti # 此项无所谓，只是个名字
+    HostName ip # 组内服务器ip地址，勿改
+    User username # 用户名，勿改
+</code></pre>
+<p>上面两种操作结果一致。</p>
+<ol start="4">
+<li>
+<p>系统选择linux，输入密码(找我要)。若界面运行一会儿后静止，且没有报错，说明已经进入。</p>
+</li>
+<li>
+<p>按Ctrl+`,可新建一个终端，即可与gemma3对话。</p>
+</li>
+<li>
+<p>关闭终端即可停止运行，一般可一直挂着，不耗本地资源。后续想进入服务器，可以看vscode界面左边的小电脑，可以一键进入。</p>
+</li>
+<li>
+<p>以上有不懂的地方或者报错的地方可以找我配置，图文教程弄起来有点麻烦。需要新模型或者改用户配置先和我打声招呼。</p>
+</li>
+</ol>
+
+    </article>
+  </main>
+</body>
+</html>

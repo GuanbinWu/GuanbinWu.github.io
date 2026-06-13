@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>内网共享文件夹配置</title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      background: #f6f8fa;
+      color: #24292f;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    .article {
+      background: #ffffff;
+      padding: 48px 56px;
+      border: 1px solid #d8dee4;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px #24292f;
+      color: #1a1a1a;
+    }
+
+    .markdown-body {
+      font-size: 16px;
+      line-height: 1.75;
+    }
+
+    .markdown-body h1 {
+      margin-top: 0;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid  #1a1a1a;
+      font-size: 2em;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h2 {
+      margin-top: 40px;
+      margin-bottom: 16px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h3 {
+      margin-top: 28px;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body p {
+      margin: 16px 0;
+      color: #1a1a1a;
+    }
+
+    .markdown-body pre {
+      padding: 18px;
+      border-radius: 8px;
+      overflow-x: auto;
+      color: #0c2d3d;
+      background: #0c2d3d;
+    }
+    .markdown-body code:not(pre code) {
+    background: #0c2d3d;
+    color: #fffefc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 16px;
+    }
+
+    .markdown-body code {
+      font-size: 16px;
+      color: #fffefc;
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 24px 14px 48px;
+      }
+
+      .article {
+        padding: 28px 22px;
+        border-radius: 8px;
+      }
+
+      .markdown-body {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <article class="markdown-body article">
+      <h1>内网共享文件夹配置</h1>
+<ol>
+<li>Apache2</li>
+</ol>
+<pre><code>systemctl status apache2
+apache2ctl -S #查看监听站点
+</code></pre>
+<p>发现服务器自带Apache2服务，并监听了80端口。
+2. 沿用现有的apache2服务，实现文件夹开放。</p>
+<pre><code>sudo a2enmod dav
+sudo a2enmod dav_fs
+sudo a2enmod auth_basic
+sudo systemctl restart apache2
+sudo apache2ctl configtest #此处检查配置文件语法，应当返回Syntax OK
+</code></pre>
+<ol start="3">
+<li>配置文件夹</li>
+</ol>
+<pre><code>mkdir -p /data/srv/webdav
+sudo chown -R www-data:www-data /data/srv/webdav
+sudo echo hello &gt; /data/srv/webdav/test.txt  #等会测试用
+</code></pre>
+<ol start="4">
+<li>设置用户名和密码，此处采用Digest Auth，避免Basic Auth全程使用明文</li>
+</ol>
+<pre><code>sudo a2enmod auth_digest
+sudo htdigest -c /etc/apache2/webdav.digest &quot;WebDAV&quot; username #此处完成用户名和密码创建
+sudo vim /etc/apache2/conf-available/webdav.conf #修改配置文件
+</code></pre>
+<p>输入</p>
+<pre><code>Alias /webdav /data/srv/webdav
+&lt;Directory /data/srv/webdav&gt;
+    DAV On
+    AuthType Digest  #这里与用户类型一致
+    AuthName &quot;WebDAV&quot; 
+    AuthUserFile /etc/apache2/webdav.digest #用户文件夹
+    Require valid-user
+    Options Indexes
+    DirectoryIndex disabled
+    LimitRequestBody 21474836480 #文件大小限制20G,0为无限制
+    &lt;LimitExcept GET OPTIONS PROPFIND&gt;
+        Require valid-user
+    &lt;/LimitExcept&gt;
+&lt;/Directory&gt;
+ProxyTimeout 3600  #扩大Timeout，避免大文件传输时被kill
+Timeout 3600
+</code></pre>
+<p>然后重启apache2</p>
+<pre><code>sudo apache2ctl configtest #先检查语法
+sudo systemctl reload apache2
+</code></pre>
+<ol start="5">
+<li>如果是从Basic用户迁移到了Digest用户，删一下遗留文件</li>
+</ol>
+<pre><code>sudo rm /etc/apache2/webdav.passwd
+</code></pre>
+<ol start="6">
+<li>下载filebrowser实现文件托管。</li>
+</ol>
+<pre><code>curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash #此命令需要与github畅通
+</code></pre>
+<p>如果连不上，可手动下载，路径为 https://github.com/filebrowser/filebrowser/releases/download/v2.63.14/</p>
+<pre><code>sudo tar -xzf /tmp/filebrowser-linux-amd64.tar.gz
+sudo chmod +x filebrowser
+filebrowser version #检查
+</code></pre>
+<p>移动到/usr/local/下，并设置好权限
+7. 初始化filebrowser数据库</p>
+<pre><code>sudo mkdir -p /etc/filebrowser
+cd /etc/filebrowser
+filebrowser config init 
+filebrowser -d /etc/filebrowser/filebrowser.db config set --root /srv/webdav #此命令在当前文件夹下初始化一个数据库.db
+
+#创建管理员，后续浏览器登录也是用这个用户名和密码
+filebrowser -d /etc/filebrowser/filebrowser.db users add admin M7f@9Qk!2Lp
+</code></pre>
+<ol start="8">
+<li>将filebrowser做成系统服务</li>
+</ol>
+<pre><code>sudo vim /etc/systemd/system/filebrowser.service
+</code></pre>
+<p>内容:</p>
+<pre><code>[Unit]
+Description=File Browser
+After=network.target
+[Service]
+User=www-data      #这里和/data/src/webdav的拥有者一致
+Group=www-data     #这里和/data/src/webdav的拥有者一致
+ExecStart=/usr/local/filebrowser/filebrowser \
+-d /etc/filebrowser/filebrowser.db \
+-r /data/srv/webdav \
+-a 127.0.0.1 \  # 只监听本机端口
+--baseurl /files \ 
+-p 8080
+Restart=always
+[Install]
+WantedBy=multi-user.target
+</code></pre>
+<p>启用</p>
+<pre><code>sudo systemctl daemon-reload
+sudo systemctl enable filebrowser
+sudo systemctl start filebrowser
+</code></pre>
+<ol start="9">
+<li>Apache 反向代理
+启用模块</li>
+</ol>
+<pre><code>sudo a2enmod proxy
+sudo a2enmod proxy_http
+sudo systemctl restart apache2
+sudo vim /etc/apache2/sites-available/000-default.conf
+</code></pre>
+<p>&lt;VirtualHost *:80&gt;字段内加上</p>
+<pre><code>PreserveHost On
+AllowEncodedSlashes NoDecode
+ProxyPass        /files/ http://127.0.0.1:8080/files/ nocanon
+ProxyPassReverse /files/ http://127.0.0.1:8080/files/
+RedirectMatch 301 ^/files$ /files/
+</code></pre>
+<p>重载</p>
+<pre><code>sudo apache2ctl configtest
+sudo systemctl reload apache2
+</code></pre>
+<ol start="10">
+<li>
+<p>测试
+浏览器打开服务器ip/files，应当能够正常使用下载上传文件。</p>
+</li>
+<li>
+<p>关于apache代理
+如果不适用apache代理，在filebrowser服务里直接写<code>-a 0.0.0.0</code>监听全网即可。此时相当于暴露8080端口，外部浏览器也通过ip:8080可直接访问。显然此时/etc/apache2/sites-available/000-default.conf里的关于代理的配置都是无用功，注释掉完全没影响。</p>
+</li>
+</ol>
+<p>为了避免端口暴露，就需要将filebrowser服务改为只监听本机8080端口，通过apache2的80端口重定向到本机8080。
+那么就需要改/etc/apache2/sites-available/000-default.conf
+同时也需要改/etc/systemd/system/filebrowser.service。
+此时<code>sudo ss -lntp | grep :8080</code>依然会看到是filebrowser在监听8080端口。但网页端只能通过80访问。</p>
+<ol start="12">
+<li>如何关闭端口</li>
+</ol>
+<pre><code>sudo systemctl stop filebrowser
+</code></pre>
+<p>即可，apache2依然运行，无副作用。</p>
+
+    </article>
+  </main>
+</body>
+</html>

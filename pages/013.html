@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>DFT计算粗略流程</title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      background: #f6f8fa;
+      color: #24292f;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    .article {
+      background: #ffffff;
+      padding: 48px 56px;
+      border: 1px solid #d8dee4;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px #24292f;
+      color: #1a1a1a;
+    }
+
+    .markdown-body {
+      font-size: 16px;
+      line-height: 1.75;
+    }
+
+    .markdown-body h1 {
+      margin-top: 0;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid  #1a1a1a;
+      font-size: 2em;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h2 {
+      margin-top: 40px;
+      margin-bottom: 16px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h3 {
+      margin-top: 28px;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body p {
+      margin: 16px 0;
+      color: #1a1a1a;
+    }
+
+    .markdown-body pre {
+      padding: 18px;
+      border-radius: 8px;
+      overflow-x: auto;
+      color: #0c2d3d;
+      background: #0c2d3d;
+    }
+    .markdown-body code:not(pre code) {
+    background: #0c2d3d;
+    color: #fffefc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 16px;
+    }
+
+    .markdown-body code {
+      font-size: 16px;
+      color: #fffefc;
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 24px 14px 48px;
+      }
+
+      .article {
+        padding: 28px 22px;
+        border-radius: 8px;
+      }
+
+      .markdown-body {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <article class="markdown-body article">
+      <h1>DFT计算粗略流程</h1>
+<h4>总流程</h4>
+<p><a href="#%E8%BF%9B%E5%85%A5%E6%9C%8D%E5%8A%A1%E5%99%A8">进入服务器</a> -&gt; <a href="#%E5%87%86%E5%A4%87%E8%AE%A1%E7%AE%97%E6%96%87%E4%BB%B6">准备计算文件</a> -&gt; <a href="#%E5%87%86%E5%A4%87%E9%9B%86%E7%BE%A4%E8%84%9A%E6%9C%AC">准备集群脚本</a> -&gt; <a href="#%E6%8F%90%E4%BA%A4%E4%BD%9C%E4%B8%9A">提交作业</a> -&gt; <a href="#%E5%88%86%E6%9E%90%E6%95%B0%E6%8D%AE">分析数据</a></p>
+<h4>进入服务器</h4>
+<ol>
+<li>
+<p>下载vscode。进入(https://code.visualstudio.com/Download)，选择适合自己电脑的版本下载并安装。</p>
+</li>
+<li>
+<p>安装SSH扩展，参考(https://developer.aliyun.com/article/1626959)，在安装SSH-Remote时，可顺便搜索&quot;Chinese(Simplified)&quot;，选第一个（作者是微软），安装后重启软件（右下角有重启提醒弹窗），可实现vscode界面全中文。</p>
+</li>
+<li>
+<p>按照教程进入SSH，注意将指令换为</p>
+<pre><code>ssh username@ip # username是用户名，请找我创建账号, 服务器ip地址请私聊我
+</code></pre>
+<p>或者在ssh配置文件里新增：</p>
+<pre><code>Host yggroup-device1 # 此项无所谓，只是个名字
+    HostName ip # 组内DFT计算服务器ip地址，勿改
+    User username # 这里需要找我创建账号 
+</code></pre>
+<p>上面两种操作结果一致。
+系统选择linux，输入密码（需要找我创建账号）。若界面运行一会儿后静止，且没有报错，说明已经进入。新用户需要配置环境，一般可以直接用我的</p>
+</li>
+<li>
+<p>进入命令行，进入工作目录，此处我的工作目录是<code>/home/wgb/DFT/</code>,因此</p>
+<pre><code>cd /home/wgb/DFT/
+</code></pre>
+<p>进入其中。后续命令若要生效，进对工作目录是大前提。</p>
+</li>
+<li>
+<p>碎碎念：如果在服务器上有自己的计算在跑，但是找队友执行的，也可以搞个SSH，可以帮忙监控一下自己的任务进度，及时提醒TA推进。</p>
+</li>
+</ol>
+<h4>准备计算文件</h4>
+<ol>
+<li>工作目录下准备好gjf文件。gjf文件如何做当面聊比较方便，按模板进塞自己的内容即可，重点在于“为什么要这么算”，这部分多来源于文献。后续再慢慢补充到这个文档里。</li>
+</ol>
+<ul>
+<li><a href="https://scc.ustc.edu.cn/zlsc/jsrj/201011/W020101108388633812337.pdf">官方书《电子结构方法》第二版的某个大佬的阅读笔记</a></li>
+<li><a href="http://sobereva.com/">可关注Sobereva大佬的博客</a>，他经验丰富，而且开源搞得好，不过还是尽量多读论文，依赖一群人好过依赖一个人。</li>
+<li><a href="http://bbs.keinsci.com/forum.php">科音论坛</a>，但我看培训介绍，好像要参加科音的培训班才能注册论坛账号？不太清楚，需进一步了解。有条件的同志可以参与到社区里，互帮互助。</li>
+</ul>
+<ol start="2">
+<li>命令行运行<code>g16 ./xxx.gjf</code> xxx.gjf是你的文件路径，即可提交给高斯16进行计算。会生成相应的<code>xxx.log</code>文件，即可分析数据。但注意，这个操作调用不了集群资源，算力很低。而且SSH连接中断（网络掉了，关闭了vscode窗口等操作）会导致任务中断。使用 <code>nohup &amp;</code>可以临时解决任务中断问题，但仍然无法享用算力。因此，建议按照下方操作调用集群，发送给服务器后台。</li>
+</ol>
+<h4>准备集群脚本</h4>
+<ol>
+<li>为每个gjf文件定制一份jobs.sh文件，例如现在有一份位于<code>/home/wgb/DFT/mol0.gjf</code>的gjf需要算，因此创建一个<code>/home/wgb/DFT/mol0_jobs.sh</code>，写入内容：<pre><code>#!/bin/bash
+g16 ./mol0.gjf  # 将gjf文件提交给g16，即高斯，会输出log文件，计算的结果全都在log文件获取
+./logtogjf.py ./mol0.log # 上一行运行完后，运行./logtogjf.py处理生成的log文件，这不是高斯的必须操作，是我自己写的python脚本，用来进行下一步的单点能计算或者溶剂化能计算。
+</code></pre>
+由此可见，对一个gjf进行的处理都可以写在jobs.sh文件里。<code>#!bin/bash</code>是文件头，不用管，照搬就行。作用请自行百度。
+如果目录下有n个gjf需要计算，相应的需要n个jobs.sh文件。可以考虑python批量生成。</li>
+</ol>
+<h4>提交作业</h4>
+<ol>
+<li>
+<p>准备总脚本，例如我这里有一个<code>/home/wgb/DFT/sbatch.sh</code>脚本，内容如下：</p>
+<pre><code>#!/bin/bash
+sbatch -N 1 -n 1 -c 16 --mem=48GB -D /home/wgb/DFT /home/wgb/DFT/mol0_jobs.sh
+sbatch -N 1 -n 1 -c 16 --mem=48GB -D /home/wgb/DFT /home/wgb/DFT/mol0_jobs.sh
+sbatch -N 1 -n 1 -c 16 --mem=48GB -D /home/wgb/DFT /home/wgb/DFT/mol0_jobs.sh
+</code></pre>
+<p>解释：前面几个参数调用的是slurm集群的sbatch命令，指定参数提交计算作业，例如<code>-c 16</code>调用16个CPU核心，<code>--mem=48GB</code>调用48G内存，此配置可根据需要写。<code>/home/wgb/DFT</code>是工作目录，很重要！一般都用gjf所在的文件夹目录，决定了输出文件的位置，不要乱写，如果误写，轻则需要去另一个文件夹找结果，重则损坏另一个文件夹下甚至别人的文件。<code>/home/wgb/DFT/mol0_jobs.sh</code> 是jobs.sh的路径。这个例子里，有三个jobs.sh文件被提交给了服务器。各用16cpu + 48g内存。</p>
+</li>
+<li>
+<p>终端输入sbatch命令，</p>
+<pre><code>sbatch ./sbatch.sh
+</code></pre>
+<p>若无报错，所有文件都被提交了。</p>
+</li>
+</ol>
+<h4>分析数据</h4>
+<ol>
+<li>
+<p>终端输入<code>squeue</code>即可查看当前作业，如果发现自己的作业不见了，说明已经计算完毕。</p>
+</li>
+<li>
+<p>判断计算成功与否：</p>
+<pre><code>grep termination xxx.log # xxx.log是你要检查的文件名，可使用通配符。
+</code></pre>
+<p>若出现<code>Normal termination</code>则DFT收敛，可分析数据。若<code>Error termintaion</code>则计算出错。可找我解决，也可百度自行搞定。</p>
+</li>
+<li>
+<p>对于收敛的log文件。</p>
+<pre><code>grep &quot;SCF Done&quot; xxx.log
+</code></pre>
+<p>则可读取当前结构收敛后的电子能。将&quot;SCF Done&quot;换为其他对应关键词，可以读取其他结果，例如HOMO LUMO GTC等等。本质上就是在log文件里进行文本搜索（grep）。当然这里也可以利用python molop模组进行自动化读取与计算。这个模组在github开源，要用<code>git clone</code>下载。具体模组用法，特定任务的脚本可找我配（我也有可能是现场搜，多读官方文档）。</p>
+</li>
+<li>
+<p>对于一个项目，不一定是一个gjf文件就能处理完，可能需要制造多个gjf文件，每个计算各取一些数据，形成想要的结果。这部分多看文献，根据需求灵活调整。</p>
+</li>
+</ol>
+<h4>批量化</h4>
+<ol>
+<li>有大批量任务需要提交时，合理利用python和bash脚本可以批量生成gjf、提交、处理数据。需要一点编程基础，但不难，有需要时可单独找我。</li>
+</ol>
+
+    </article>
+  </main>
+</body>
+</html>

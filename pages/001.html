@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>高斯DFT计算：入门or入土</title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      background: #f6f8fa;
+      color: #24292f;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    .article {
+      background: #ffffff;
+      padding: 48px 56px;
+      border: 1px solid #d8dee4;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px #24292f;
+      color: #1a1a1a;
+    }
+
+    .markdown-body {
+      font-size: 16px;
+      line-height: 1.75;
+    }
+
+    .markdown-body h1 {
+      margin-top: 0;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid  #1a1a1a;
+      font-size: 2em;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h2 {
+      margin-top: 40px;
+      margin-bottom: 16px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h3 {
+      margin-top: 28px;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body p {
+      margin: 16px 0;
+      color: #1a1a1a;
+    }
+
+    .markdown-body pre {
+      padding: 18px;
+      border-radius: 8px;
+      overflow-x: auto;
+      color: #0c2d3d;
+      background: #0c2d3d;
+    }
+    .markdown-body code:not(pre code) {
+    background: #0c2d3d;
+    color: #fffefc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 16px;
+    }
+
+    .markdown-body code {
+      font-size: 16px;
+      color: #fffefc;
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 24px 14px 48px;
+      }
+
+      .article {
+        padding: 28px 22px;
+        border-radius: 8px;
+      }
+
+      .markdown-body {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <article class="markdown-body article">
+      <h1>高斯DFT计算：入门or入土</h1>
+<p>上一版g16教程被大家吐槽较为抽象看不懂，实际上可能更适合给我自己备忘用，这里会写一个详细一点的版本。手把手带入门。帮你完成一遍简单的DFT计算的操作</p>
+<p>由于github容量有限，我会尽量以文字为主，不放图片了。</p>
+<h2>准备工作：必要的知识</h2>
+<ul>
+<li>vscode。请通过百度或问chatgpt完成以下工作</li>
+</ul>
+<ol>
+<li>安装vscode。</li>
+<li>进入vscode，安装&quot;Chinese(Simplified)&quot;和&quot;SSH&quot;扩展。</li>
+<li>学会新建一个终端。</li>
+</ol>
+<ul>
+<li>进入服务器</li>
+</ul>
+<p>这一步有劳线下找我，需要给您当面配置，并教您如何在vscode里通过SSH连接上服务器。</p>
+<ul>
+<li>命令行</li>
+</ul>
+<p>按<code>Ctrl+`</code>，vscode下方会弹出一个终端。这就是你操作系统的地方了。</p>
+<p>通常您会看见如下的字样<code>Wuguanbin@YGgroup-Device1:~$</code>这里的格式是“当前用户@设备名：当前目录$”，$号后面可以输入内容了。我们关注一下这个子界面的右上角，你可能会看见“sh”或“bash”的一个字样，这表示我们当前这个界面是由不同的软件提供给你的，linux有sh和bash，正如windows有cmd和powershell,输入<code>bash</code>,回车,你会新建一个bash进程,再输入<code>whoami</code>，你会发现系统返回了您的用户名，这是由<code>whoami</code>这个命令本身所决定的，倘若我输入<code>date</code>，系统会告诉您当前的系统时间。可以想象，只要我事先定义好了命令的含义和语法，可以利用这个界面指挥系统干几乎任何事情。</p>
+<p>更进一步地，您可以想象在windowns系统中双击图标打开某个程序，实际上就是windows在背后的一个您看不见命令行中执行了一条“打开软件”的命令。</p>
+<ul>
+<li>文件路径</li>
+</ul>
+<p>vscode左边一列logo选择第一个，您会发现您可以打开一个文件夹，这您的windows经验一致。这个功能是vscode提供给您的，而非终端。
+我们回到终端中来，输入<code>ls</code>，您会发现系统返回了您当前文件夹下的所有文件。进一步地我们输入<code>ls -lh</code>,系统依然返回文件信息，但方式会不太一样，这种“-”号开头的叫“选项”，这意味着同一个命令会有不同的选择。在这里“l”让ls这个命令换了种展示方式，而“h”让文件大小变成了human易读的KB,MB，而非字节长度。</p>
+<p>需要知道几个事情：</p>
+<ol>
+<li>
+<p>绝对路径：</p>
+</li>
+<li>
+<p>相对路径：</p>
+</li>
+<li>
+<p>当前工作目录：</p>
+</li>
+</ol>
+<p>bash终端中</p>
+<ul>
+<li>必须学会的命令</li>
+</ul>
+<p>--</p>
+<ul>
+<li>
+<p>权限</p>
+</li>
+<li>
+<p>环境与配置环境</p>
+</li>
+</ul>
+<h2>DFT: 制作输入文件</h2>
+<h2>DFT：执行计算</h2>
+<p>此处以</p>
+<h2>DFT：数据处理</h2>
+<h2>DFT：获得有科学“意义”的数据</h2>
+<ul>
+<li>
+<p>吉布斯自由能</p>
+</li>
+<li>
+<p>相互作用能量</p>
+</li>
+<li>
+<p>反应能</p>
+</li>
+</ul>
+<h2>提升效率：py脚本和sh脚本</h2>
+<ul>
+<li>
+<p>slurm</p>
+</li>
+<li>
+<p>一键搞定对单分子进行的多个操作</p>
+</li>
+<li>
+<p>多分子批量提交任务</p>
+</li>
+</ul>
+
+    </article>
+  </main>
+</body>
+</html>

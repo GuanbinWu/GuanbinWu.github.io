@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>《通过例子学Rust》 （浓缩版）</title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      background: #f6f8fa;
+      color: #24292f;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    .article {
+      background: #ffffff;
+      padding: 48px 56px;
+      border: 1px solid #d8dee4;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px #24292f;
+      color: #1a1a1a;
+    }
+
+    .markdown-body {
+      font-size: 16px;
+      line-height: 1.75;
+    }
+
+    .markdown-body h1 {
+      margin-top: 0;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid  #1a1a1a;
+      font-size: 2em;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h2 {
+      margin-top: 40px;
+      margin-bottom: 16px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h3 {
+      margin-top: 28px;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body p {
+      margin: 16px 0;
+      color: #1a1a1a;
+    }
+
+    .markdown-body pre {
+      padding: 18px;
+      border-radius: 8px;
+      overflow-x: auto;
+      color: #0c2d3d;
+      background: #0c2d3d;
+    }
+    .markdown-body code:not(pre code) {
+    background: #0c2d3d;
+    color: #fffefc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 16px;
+    }
+
+    .markdown-body code {
+      font-size: 16px;
+      color: #fffefc;
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 24px 14px 48px;
+      }
+
+      .article {
+        padding: 28px 22px;
+        border-radius: 8px;
+      }
+
+      .markdown-body {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <article class="markdown-body article">
+      <h1>《通过例子学Rust》 （浓缩版）</h1>
+<h5>Hello world</h5>
+<ol>
+<li>注释<pre><code>fn main() {
+ // 这是行注释的例子
+
+ /*
+  * 这是另外一种注释——块注释。一般而言，行注释是推荐的注释格式，
+  * 不过块注释在临时注释大块代码特别有用。/* 块注释可以 /* 嵌套, */ */
+  * 所以只需很少按键就可注释掉这些 main() 函数中的行。/*/*/* 自己试试！*/*/*/
+  */
+
+ /*
+ 注意，上面的例子中纵向都有 `*`，这只是一种风格，实际上这并不是必须的。
+ */
+
+ // 观察块注释是如何简单地对表达式进行修改的，行注释则不能这样。
+ // 删除注释分隔符将会改变结果。
+ let x = 5 + /* 90 + */ 5;
+ println!(&quot;Is `x` 10 or 100? x = {}&quot;, x);
+}
+</code></pre>
+</li>
+<li>格式化输出<pre><code>fn main() {
+ // 变量内容会转化成字符串。
+ println!(&quot;{} days&quot;, 31);
+
+ // 不加后缀的话，31 就自动成为 i32 类型。
+ // 你可以添加后缀来改变 31 的类型（例如使用 31i64 声明 31 为 i64 类型）。
+ // 用变量替换字符串有多种写法。比如可以使用位置参数。
+ println!(&quot;{0}, this is {1}. {1}, this is {0}&quot;, &quot;Alice&quot;, &quot;Bob&quot;);
+
+ // 可以使用命名参数。
+ println!(&quot;{subject} {verb} {object}&quot;,
+          object=&quot;the lazy dog&quot;,
+          subject=&quot;the quick brown fox&quot;,
+          verb=&quot;jumps over&quot;);
+
+ // 可以在 `:` 后面指定特殊的格式。
+ println!(&quot;{} of {:b} people know binary, the other half don't&quot;, 1, 2);
+
+ // 你可以按指定宽度来右对齐文本。
+ // 下面语句输出 &quot;     1&quot;，5 个空格后面连着 1。
+ println!(&quot;{number:&gt;width$}&quot;, number=1, width=6);
+
+ // 在数字左边补 0。下面语句输出 &quot;000001&quot;。
+ println!(&quot;{number:&gt;0width$}&quot;, number=1, width=6);
+
+ // println! 会检查使用到的参数数量是否正确。
+ println!(&quot;My name is {0}, {1} {0}&quot;, &quot;Bond&quot;);
+ // 改正 ^ 补上漏掉的参数：&quot;James&quot;
+
+ // 创建一个包含单个 `i32` 的结构体（structure）。命名为 `Structure`。
+ #[allow(dead_code)]
+ struct Structure(i32);
+
+ // 但是像结构体这样的自定义类型需要更复杂的方式来处理。
+ // 下面语句无法运行。
+ println!(&quot;This struct `{}` won't print...&quot;, Structure(3));
+ // 改正 ^ 注释掉此行。
+ }
+</code></pre>
+<pre><code>#[derive(Debug)]
+struct Structure(i32);
+
+// 将 `Structure` 放到结构体 `Deep` 中。然后使 `Deep` 也能够打印。
+#[derive(Debug)]
+struct Deep(Structure);
+
+fn main() {
+    // 使用 `{:?}` 打印和使用 `{}` 类似。
+    println!(&quot;{:?} months in a year.&quot;, 12);
+    println!(&quot;{1:?} {0:?} is the {actor:?} name.&quot;,
+             &quot;Slater&quot;,
+             &quot;Christian&quot;,
+             actor=&quot;actor's&quot;);
+
+    // `Structure` 也可以打印！
+    println!(&quot;Now {:?} will print!&quot;, Structure(3));
+    
+    // 使用 `derive` 的一个问题是不能控制输出的形式。
+    // 假如我只想展示一个 `7` 怎么办？
+    println!(&quot;Now {:?} will print!&quot;, Deep(Structure(7)));
+
+    // 使用{:#?}美化打印
+    println!(&quot;{:#?}&quot;, Deep(Structure(7)));
+}
+</code></pre>
+<pre><code>use std::fmt;
+struct Structure(i32);
+// 为了使用 `{}` 标记，必须手动为类型实现 `fmt::Display` trait。
+impl fmt::Display for Structure {
+    // 这个 trait 要求 `fmt` 使用与下面的函数完全一致的函数签名
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter) -&gt; fmt::Result {
+        write!(f, &quot;{}&quot;, self.0)
+    }
+}
+
+//fmt::Display不适用于泛型容器
+//对于任何非泛型的容器类型， fmt::Display 都能够实现
+//实例
+struct List(Vec&lt;i32&gt;);
+
+impl fmt::Display for List {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter) -&gt; fmt::Result {
+        // 使用元组的下标获取值，并创建一个 `vec` 的引用。
+        let vec = &amp;self.0;
+        write!(f, &quot;[&quot;)?;
+        // 使用 `v` 对 `vec` 进行迭代，并用 `count` 记录迭代次数。
+        for (count, v) in vec.iter().enumerate() {
+            // 对每个元素（第一个元素除外）加上逗号。
+            // 使用 `?` 或 `try!` 来返回错误。
+            if count != 0 { write!(f, &quot;, &quot;)?; }
+            write!(f, &quot;{}&quot;, v)?;
+        }
+        // 结尾中括号
+        write!(f, &quot;]&quot;)
+    }
+}
+</code></pre>
+</li>
+</ol>
+<h5>原生类型</h5>
+<ol>
+<li>字面量、运算符</li>
+<li>元组</li>
+<li>数组、切片</li>
+</ol>
+<h5>自定义类型</h5>
+<ol>
+<li>struct</li>
+<li>enum</li>
+<li>const</li>
+</ol>
+<h5>变量绑定</h5>
+<ol>
+<li>可变变量</li>
+<li>遮蔽</li>
+<li>先声明</li>
+<li>冻结</li>
+</ol>
+<h5>类型系统</h5>
+<ol>
+<li>类型转换</li>
+<li>字面量</li>
+<li>类型推断</li>
+<li>别名</li>
+</ol>
+<h5>类型转换</h5>
+<ol>
+<li>From &amp; Into</li>
+<li>TryFrom &amp; TryInto</li>
+<li>ToString &amp; Fromstr</li>
+</ol>
+<h5>表达式</h5>
+<ol>
+<li>表达式</li>
+</ol>
+<h5>流程控制</h5>
+<ol>
+<li>if/else</li>
+<li>loop</li>
+<li>while</li>
+<li>for</li>
+<li>match</li>
+<li>if let</li>
+<li>while let</li>
+</ol>
+<h5>函数</h5>
+<ol>
+<li>方法</li>
+<li>闭包</li>
+<li>高阶函数</li>
+<li>发散函数</li>
+</ol>
+<h5>模块</h5>
+<ol>
+<li>可见性</li>
+<li>结构体的可见性</li>
+<li>use</li>
+<li>super &amp; self</li>
+<li>文件分层</li>
+</ol>
+<h5>crate</h5>
+<ol>
+<li>库</li>
+<li>使用库</li>
+</ol>
+<h5>cargo</h5>
+<ol>
+<li>依赖</li>
+<li>约定规范</li>
+<li>测试</li>
+<li>构建脚本</li>
+</ol>
+<h5>属性</h5>
+<ol>
+<li>dead_code</li>
+<li>crate</li>
+<li>cfg</li>
+</ol>
+<h5>泛型</h5>
+<ol>
+<li>函数</li>
+<li>实现</li>
+<li>trait</li>
+<li>约束</li>
+<li>多重约束</li>
+<li>where</li>
+<li>newtype</li>
+<li>关联项</li>
+<li>虚类型参数</li>
+</ol>
+<h5>作用域规则</h5>
+<ol>
+<li>RAII</li>
+<li>所有权与移动</li>
+<li>借用</li>
+<li>生命周期</li>
+</ol>
+<h5>trait</h5>
+<ol>
+<li>派生</li>
+<li>dyn</li>
+<li>运算符重载</li>
+<li>Drop</li>
+<li>Iterator</li>
+<li>impl Trait</li>
+<li>Clone</li>
+<li>父trait</li>
+<li>消除重叠trait</li>
+</ol>
+<h5>宏</h5>
+<ol>
+<li>语法</li>
+<li>DRY（不写重复代码）</li>
+<li>DSL（领域专用语言）</li>
+<li>可变参数接口</li>
+</ol>
+<h5>错误处理</h5>
+<ol>
+<li>panic</li>
+<li>Option &amp; unwrap</li>
+<li>Result</li>
+<li>处理多种Err类型</li>
+<li>遍历Result</li>
+</ol>
+<h5>std库</h5>
+<ol>
+<li>箱子，栈，堆</li>
+<li>vec</li>
+<li>String</li>
+<li>Option</li>
+<li>Result</li>
+<li>panic！</li>
+<li>HashMap</li>
+<li>Rc</li>
+<li>Arc</li>
+</ol>
+<h5>std库更多</h5>
+<ol>
+<li>线程</li>
+<li>通道</li>
+<li>路径</li>
+<li>I/O</li>
+<li>子进程</li>
+<li>文件系统操作</li>
+<li>程序参数</li>
+<li>外部语言函数接口</li>
+</ol>
+<h5>测试</h5>
+<ol>
+<li>单元测试</li>
+<li>文档测试</li>
+<li>集成测试</li>
+<li>开发依赖</li>
+</ol>
+<h5>unsafe</h5>
+<ol>
+<li>unsafe</li>
+</ol>
+<h5>兼容性</h5>
+<ol>
+<li>原始标志符</li>
+</ol>
+<h5>补充</h5>
+<ol>
+<li>文档</li>
+<li>Playpen</li>
+</ol>
+
+    </article>
+  </main>
+</body>
+</html>

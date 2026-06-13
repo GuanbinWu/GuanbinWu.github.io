@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Gromacs安装与使用</title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      background: #f6f8fa;
+      color: #24292f;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    .article {
+      background: #ffffff;
+      padding: 48px 56px;
+      border: 1px solid #d8dee4;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px #24292f;
+      color: #1a1a1a;
+    }
+
+    .markdown-body {
+      font-size: 16px;
+      line-height: 1.75;
+    }
+
+    .markdown-body h1 {
+      margin-top: 0;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid  #1a1a1a;
+      font-size: 2em;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h2 {
+      margin-top: 40px;
+      margin-bottom: 16px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h3 {
+      margin-top: 28px;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body p {
+      margin: 16px 0;
+      color: #1a1a1a;
+    }
+
+    .markdown-body pre {
+      padding: 18px;
+      border-radius: 8px;
+      overflow-x: auto;
+      color: #0c2d3d;
+      background: #0c2d3d;
+    }
+    .markdown-body code:not(pre code) {
+    background: #0c2d3d;
+    color: #fffefc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 16px;
+    }
+
+    .markdown-body code {
+      font-size: 16px;
+      color: #fffefc;
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 24px 14px 48px;
+      }
+
+      .article {
+        padding: 28px 22px;
+        border-radius: 8px;
+      }
+
+      .markdown-body {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <article class="markdown-body article">
+      <h1>Gromacs安装与使用</h1>
+<h2>安装</h2>
+<p>参考教程：
+<a href="http://sobereva.com/457">sob老师的博客</a>
+使用GROMACS 2024.6，并配置GPU加速。</p>
+<ol>
+<li>准备cmake。最好直接用<code>sudo apt install cmake</code>或<code>sudo dnf install cmake</code>。但需要小心版本，GROMACS 2024.6需要3.18以上。如果需要手动安装新版cmake。过程如下：
+进入https://cmake.org/download/。选择合适的版本，确定下载链接。</li>
+</ol>
+<pre><code>wget https://github.com/Kitware/CMake/releases/download/v4.0.1/cmake-4.0.1-linux-x86_64.tar.gz
+tar -xvf xxx/cmake-xxx.tar.gz
+cd xxx/cmake-xxx
+./bootstrap
+# Sob老师的教程里使用了 ./bootstrap --prefix=/sob/cmake3 -- -DCMAKE_USE_OPENSSL=OFF
+# --prefix指定安装路径，-DCMAKE_USE_OPENSSL指定不依赖openssl。可自选
+make -j #编译
+sudo make install #安装
+</code></pre>
+<p>一切操作都可以在用户目录下完成，因为make install 用了sudo，所以最后的cmake会在/usr/local/下完成安装，可公共使用，自己编辑一下环境变量即可。</p>
+<pre><code>export PATH=/usr/local/cmake-4.0.1-linux-x86_64/bin:$PATH
+</code></pre>
+<ol start="2">
+<li>
+<p>安装fftw。可参考sob老师的博客。</p>
+</li>
+<li>
+<p>gmx安装：参考<a href="https://manual.gromacs.org/2024.5/install-guide/index.html">官方文档</a>以及sob老师的博客，cmake一行记得把后面两个参数删掉，直接<code>cmake</code>即可。完毕后检查/usr/local/下是否有gromacs文件夹即可。</p>
+</li>
+</ol>
+<pre><code>mkdir build
+cd build
+export CMAKE_PREFIX_PATH=/usr/local/fftw3.3.8
+cmake3 .. -DCMAKE_INSTALL_PREFIX=/usr/local/gromacs-2024.6 -DGMX_GPU=CUDA -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda12.4
+</code></pre>
+<p>然后配置环境：</p>
+<pre><code># chmod +x /usr/local/gromacs2024.6/bin/GMXRC
+source /usr/local/gromacs2024.6/bin/GMXRC
+</code></pre>
+<p>能which到gmx说明成功。</p>
+<h2>GROMACS使用</h2>
+<p>主要针对有机小分子溶液相混合问题。</p>
+<ol>
+<li>材料文件生成：确定体系内有哪些分子，Gview里准备好各物种的mol2文件，用Multiwfn的RESP.sh脚本做chg文件，拿到原子电荷。参考<a href="http://sobereva.com/476">教程</a>。</li>
+</ol>
+<pre><code>RESP.sh mol.mol2 0 1 gas
+</code></pre>
+<ol start="2">
+<li>用Sobtop生成各分子拓扑文件。一个分子出三个文件。<code>.top</code>,<code>.itp</code>,<code>.gro</code>。参考<a href="http://sobereva.com/soft/Sobtop/#FAQ">官方教程</a>
+在生成文件时，先选7指定chg，就可以自动加入原子电荷。具体地，每一步选哪个选项，Sob老师已经写了，忘了去查。</li>
+</ol>
+<pre><code>指定chg：选 7 10
+
+产生gro文件：选 2
+
+产生itp文件：选 1 2 4
+
+</code></pre>
+<ol start="3">
+<li>
+<p>制作topol.top文件，记录整个混合系统的拓扑信息。几个关键点，一，要手动写[ default ]字段，具体参数要与使用的力场一致(打开力场文件复制即可)。二，将各itp文件的[ atom type]字段剪切到topol.top，位置在#include之前，去重，注意顺序要与itp文件中各原子出现顺序一致。三、重新规定Resname。方便后面分group。</p>
+</li>
+<li>
+<p>制作盒子。用gmx制作盒子的过程。</p>
+</li>
+</ol>
+<pre><code>gmx insert-molecules -ci mol.gro -nmol 10 -box 10 10 10 -o box.gro # 指定尺寸并加入一种gro
+gmx insert-molecules -ci mol.gro -nmol 10 [-box 10 10 10] -f old_box.gro -o box.gro # 在一个盒子中加入另一种gro。-box可选，是用来增大尺寸。
+#注：此处的gro不一定只含一个分子。
+</code></pre>
+<p>注意终端输出，实际加入数据可能小于指定数。如果报错，终端会提示。</p>
+<ol start="5">
+<li>显示溶剂的加入与加分子无差别。隐式溶剂的加入暂未考虑。离子的加入需要特殊说明。此处以KPF6为例。</li>
+</ol>
+<p>（1）直接用RESP.sh脚本算不了盐体系，只能算出净电荷数为-1的PF6-阴离子。自然地，K+净电荷+1。但实际上有机盐做DFT计算出的RESP，阳离子通常只有+0.7~+0.95的电荷。所以最好是手动算，然后用Multiwfn计算RESP电荷。Multiwfn脚本从RESP.sh里扒一下就行了。
+（2）DFT计算完，得到KPF6的log和fchk，gview获得mol2，Multiwfn算出chg，Sobtop算出gro，itp，top。这里的top没啥用，后面要做总的topol.top。
+（3）从KPF6的itp里拆分出K+和PF6-的itp。PF6-.itp里删去和K+有关的所有参数。这样在拓扑上，K+与阴离子就没有成键项了。同时由于以盐的形式计算DFT，获得的原子电荷不会是+1。接近真实情况。
+（4）根据研究的课题，有两种离子的插入方式。如果需要每一对阴阳离子保持紧密对结构，直接修改KPF6.gro里K的分子序号，原子序号，残基名即可。这样的gro维持了初始的盐的相对坐标。后续直接insert-molecules时，每个阴离子都在附近有阳离子。如果不关心这个问题，可以从KPF6.gro里拆出两个gro文件，再两次insert-molecules，可想而知，此时的阴阳离子都是均匀分布在盒子里的。
+6. 能量最小化。</p>
+<pre><code>gmx grompp -f em.mdp -c box.gro -p topol.top -o em.tpr
+gmx mdrun -deffnm em
+</code></pre>
+<p>mdp文件参考sob老师的模板，主要关注最小化方法(steep，cg...)，步长，步数，Fmax以及约束方式。
+em的时候，注意读输出，Fmax并不一定总是能按照你的设想收敛，如果em做完势能依然很高，却盲目往下走，很可能后面体系要炸。
+7. NVT与NPT
+NVT：</p>
+<pre><code>gmx grompp -f nvt.mdp -c em.gro -p topol.top -o nvt.tpr
+gmx mdrun -v -deffnm nvt
+</code></pre>
+<p>NVT与NPT的区别就是是否开控压。
+NPT：</p>
+<pre><code>gmx grompp -f npt.mdp -c nvt.gro -p topol.top -o npt.tpr
+gmx mdrun -v -deffnm npt
+</code></pre>
+<ol start="8">
+<li>几个问题：</li>
+</ol>
+<p>&quot; The X-size of the box (6.655719) times the triclinic skew factor (1.000000) is smaller than the number of DD cells (8) times the smallest allowed cell size(0.833498)。&quot;</p>
+<p>简单来讲，盒子太小、细分太高。</p>
+<p>扩大盒子尺寸：</p>
+<pre><code>gmx editconf -f box.gro -o new_box.gro -box 7 7 7
+</code></pre>
+<p>或降低DD单元格数目：</p>
+<pre><code>gmx mdrun 里加上 -ntmpi 4
+</code></pre>
+<pre><code>gmx dump -s md.tpr &gt; 1.txt
+# 查看盒子大小
+</code></pre>
+<pre><code>gmx mdrun -v -deffnm -nb cpu -bonded cpu -pme cpu # 全程强制使用CPU计算，便于cuda报错时排查原因。
+</code></pre>
+<ol start="9">
+<li>VMD可视化：</li>
+</ol>
+<p>先处理PBC设置，否则会出现奇怪条纹。</p>
+<pre><code>#如何将某个group平移到盒子中心？
+gmx trjconv -s md.tpr -f md.trr -o md_center.trr -pbc cluster -center
+#选择期望的group即可，但这样做完之后，依然不会改善条纹问题，所以再做一步-pbc mol是必要的。
+
+gmx trjconv -s md.tpr -f md_center.trr -o md_fix.trr -pbc mol
+
+# -pbc mol 保持每个分子整体不被切割，把主分子放到盒子中心。
+</code></pre>
+<p>加载gro文件后再加载trr轨迹文件即可。</p>
+<pre><code>vmd md.gro md_fix.trr 
+#后续要手动删去第0帧，原因不言而喻。
+</code></pre>
+<ol start="10">
+<li>输出一般数据，判断体系是否到达稳态，可据此调整步长和时间。</li>
+</ol>
+<p>（1）体系能量：</p>
+<pre><code>gmx energy -f md.edr -o energy.xvg
+# 2024.6版里，此命令后出现选择框，很多性质可一并输出。
+</code></pre>
+<p>（2）体系密度：</p>
+<pre><code>gmx density -s md.tpr -f md.trr
+</code></pre>
+<p>（3）RMSD 均方根偏差：</p>
+<pre><code>gmx rms -s md.tpr -f md.trr -o rmsd.xvg
+</code></pre>
+<p>（4）输出坐标：</p>
+<pre><code>gmx traj -s md.tpr -f md.trr -ox coords.xvg
+</code></pre>
+<p>上述命令均可加 -n index.ndx 使用定制化的索引文件。</p>
+<p>（5）做索引文件：</p>
+<pre><code>gmx make_ndx -f md.tpr -o index.ndx
+# 索引文件语法一例：
+# r MOL &amp; t os
+# 意为选择resname==MOL 且 atomtype==os 的所有原子形成一个新的group
+# 期望的groups全部创建好后，q保存退出
+</code></pre>
+<p>（6）RDF:</p>
+<pre><code>gmx rdf -f md.trr -s md.tpr -n index.ndx -o rdf.xvg -cn rdf_cn.xvg -bin 0.005 -b 1000 -e 2000 -rmax 1
+
+#-f md.xtc：指定轨迹文件。 没有xtc用trr
+#-s md.tpr：指定参数文件。
+#-n index.ndx：指定索引文件，定义了感兴趣的原子组。
+#-o rdf.xvg：输出RDF结果文件。
+#-cn rdf_cn.xvg：输出配位数结果文件。
+#-bin 0.01：设置RDF的bin宽度（nm）。
+#-b 1000：设置计算开始时间（ps）。
+#-e 2000：设置计算结束时间（ps）。
+#-rmax 1：最大半径（nm）。
+</code></pre>
+<ol start="12">
+<li>几个不涉及蛋白的教程，可参考：<a href="https://www.x-mol.com/groups/Dong/news/2027">一</a> <a href="https://zhuanlan.zhihu.com/p/571601988">二</a></li>
+<li>比较全面的中文教程，可惜集中于蛋白和多肽，供参考。<a href="https://jerkwin.github.io/9999/10/31/GROMACS%E4%B8%AD%E6%96%87%E6%95%99%E7%A8%8B/">三</a></li>
+<li>出RDF数据教程参考：
+<a href="https://manual.gromacs.org/current/onlinehelp/gmx-rdf.html">1</a> <a href="http://bbs.keinsci.com/thread-6962-1-1.html">2</a> <a href="http://bbs.keinsci.com/thread-7508-1-1.html">3</a></li>
+</ol>
+
+    </article>
+  </main>
+</body>
+</html>

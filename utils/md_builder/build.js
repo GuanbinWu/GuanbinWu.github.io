@@ -40,6 +40,11 @@ files.forEach(file => {
   indexItems.push({ title, file: `${name}.html` });
 });
 
+
+
+
+
+// index
 const finalIndex = indexTemplate
     .replace("{{list}}", indexItems.map(i => `<li><a href="./pages/${i.file}">${i.title}</a></li>`).join("\n"))
 

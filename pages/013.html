@@ -127,6 +127,16 @@
       }
     }
   </style>
+  <script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$']]
+    }
+  };
+  </script>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 
 <body>
@@ -232,5 +242,12 @@ sbatch -N 1 -n 1 -c 16 --mem=48GB -D /home/wgb/DFT /home/wgb/DFT/mol0_jobs.sh
 
     </article>
   </main>
+    <script>
+  window.addEventListener("load", () => {
+    if (window.MathJax) {
+      MathJax.typesetPromise();
+    }
+  });
+  </script>
 </body>
 </html>

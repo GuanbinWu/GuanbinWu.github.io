@@ -127,6 +127,16 @@
       }
     }
   </style>
+  <script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$']]
+    }
+  };
+  </script>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 
 <body>
@@ -144,5 +154,12 @@ munge配置教程参考这个<a href="https://www.cnblogs.com/haibaraai0913/p/11
 
     </article>
   </main>
+    <script>
+  window.addEventListener("load", () => {
+    if (window.MathJax) {
+      MathJax.typesetPromise();
+    }
+  });
+  </script>
 </body>
 </html>

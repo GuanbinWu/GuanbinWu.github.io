@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>开启SSH公钥认证</title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      background: #f6f8fa;
+        color: #24292f;
+      font-family: "Georgia","Times New Roman","Times",serif;
+    }
+    code, pre {
+      font-family:
+        ui-monospace,
+        Consolas,
+        "Liberation Mono",
+        SFMono-Regular,
+        Menlo,
+        Monaco,
+        "Courier New",
+        monospace;
+      color: #1a1a1a;
+      font-size: 16px;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    .article {
+      background: #ffffff;
+      padding: 48px 56px;
+      border: 1px solid #d8dee4;
+      border-radius: 6px;
+      box-shadow: 0 8px 12px #24292f;
+      color: #1a1a1a;
+    }
+
+    .markdown-body {
+      font-size: 16px;
+      line-height: 1.75;
+    }
+
+    .markdown-body h1 {
+      margin-top: 0;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid  #1a1a1a;
+      font-size: 2em;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h2 {
+      margin-top: 40px;
+      margin-bottom: 16px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h3 {
+      margin-top: 28px;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body p {
+      margin: 16px 0;
+      color: #1a1a1a;
+    }
+
+    .markdown-body pre {
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      background: #d6d6d6;
+      color: #1a1a1a;
+      font-size: 14px;
+    }
+    .markdown-body code:not(pre code) {
+    background: #d6d6d6;
+    color: inherit;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: inherit;
+  }
+
+    .markdown-body code {
+      font-size: inherit;
+      color:inherit;
+    }
+    .markdown-body pre code {
+      background: none;
+      padding: 0;
+      font-size: inherit;
+      color: inherit;
+    }
+
+    .token.comment,
+    .hljs-comment,
+    .hljs-quote {
+      color: inherit !important;
+      font-style: normal !important;
+      opacity: 1 !important;
+    }
+    @media (max-width: 720px) {
+      .page {
+        padding: 24px 14px 48px;
+      }
+
+      .article {
+        padding: 28px 22px;
+        border-radius: 8px;
+      }
+
+      .markdown-body {
+        font-size: 16px;
+      }
+    }
+  </style>
+  <script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$']]
+    }
+  };
+  </script>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+  <main class="page">
+    <article class="markdown-body article">
+      <h1>开启SSH公钥认证</h1>
+<ol>
+<li>为何要开启SSH公钥认证？</li>
+</ol>
+<p>SSH登陆服务器时，通常是输密码。但用户通常对安全意识不足，设置了弱密码，容易被脚本破解。攻击者就能进入服务器，设置病毒或挖矿脚本。同时攻击者甚至可能利用linux系统的安全漏洞进行提权，直接获得系统权限。那时，我们的服务器就将变成他人的赚钱工具，损失却又我们承担。在网域鱼龙混杂的情况下，此类事件的发生只是迟早问题。</p>
+<p>公钥通常是32位或64位的随机字符串，由高强度密码生成算法实现。破解者要想通过穷举，破解的平均时间将会上百上千年。由此大大增加了服务器的网络安全。</p>
+<p>因此，更好的方式是：在个人电脑上生成公钥，并保存在固定路径。服务端调整为仅允许公钥认证。同时这会带来一个好处，上机时不需要输密码了，用户体验也会更好。但坏处是由此一来服务器只认个人电脑，而不认密码，当你有多台个人设备时，你得手动在每台设备上重复一遍配置，但我相信，这是值得的。</p>
+<ol start="2">
+<li>在本机上生成公钥
+终端输入：</li>
+</ol>
+<pre><code>ssh-keygen -t ed25519
+</code></pre>
+<p>上面的 -t ed25519是在指定算法。当然也可以 -t rsa 都行。
+然后在<code>~/.ssh/</code>目录下会，你会看到一个<code>id_ed15519</code>文件和<code>id_ed15519.pub</code>文件。后者就是公钥，可以安全地公开给全世界，前者是私钥，一定要保管好，避免泄密。（这里需要一些非对称加密的基本常识，建议看wiki百科）。</p>
+<p>如果上述命令无法执行失败，通常是你ssh没配置好，可以线下找我处理，或者问AI。</p>
+<ol>
+<li>在服务器上写入公钥。
+在服务器上 <code>~/.ssh/</code>目录下新建<code>authorized_keys</code>文件，并将<code>id_ed15519.pub</code>的内容全盘复制进去即可。后续上机就可以发现不需要输入密码了。
+！！！重要：一定要通过</li>
+</ol>
+<pre><code>chmod 600 ~/.ssh/authorized_keys
+</code></pre>
+<p>将文件变为 ``-rw-------````状态，这意味这此文件只有你自己能读写。这是必要的，想象以下，你的认证文件对全系统公开，另一个用户就能把密钥换成他自己的，你的号立马变成他的了。</p>
+<p>特殊地，如果个人终端和服务器都是linux系统的话，可以用<code>ssh-copy-id</code>命令一键搞定（自己问ai），windows上没有这个命令。就手动上机写一下吧。</p>
+<ol start="4">
+<li>多终端认证。
+现在你手上有多台个人电脑，你希望都能上机。没问题，将公钥追加到<code>~/.ssh/authorized_keys</code>文件即可。一个密钥占一行。</li>
+</ol>
+
+    </article>
+  </main>
+    <script>
+  window.addEventListener("load", () => {
+    if (window.MathJax) {
+      MathJax.typesetPromise();
+    }
+  });
+  </script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>内网服务器如何访问公网</title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      background: #f6f8fa;
+        color: #24292f;
+      font-family: "Georgia","Times New Roman","Times",serif;
+    }
+    code, pre {
+      font-family:
+        ui-monospace,
+        Consolas,
+        "Liberation Mono",
+        SFMono-Regular,
+        Menlo,
+        Monaco,
+        "Courier New",
+        monospace;
+      color: #1a1a1a;
+      font-size: 16px;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    .article {
+      background: #ffffff;
+      padding: 48px 56px;
+      border: 1px solid #d8dee4;
+      border-radius: 6px;
+      box-shadow: 0 8px 12px #24292f;
+      color: #1a1a1a;
+    }
+
+    .markdown-body {
+      font-size: 16px;
+      line-height: 1.75;
+    }
+
+    .markdown-body h1 {
+      margin-top: 0;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid  #1a1a1a;
+      font-size: 2em;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h2 {
+      margin-top: 40px;
+      margin-bottom: 16px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body h3 {
+      margin-top: 28px;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+
+    .markdown-body p {
+      margin: 16px 0;
+      color: #1a1a1a;
+    }
+
+    .markdown-body pre {
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      background: #d6d6d6;
+      color: #1a1a1a;
+      font-size: 14px;
+    }
+    .markdown-body code:not(pre code) {
+    background: #d6d6d6;
+    color: inherit;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: inherit;
+  }
+
+    .markdown-body code {
+      font-size: inherit;
+      color:inherit;
+    }
+    .markdown-body pre code {
+      background: none;
+      padding: 0;
+      font-size: inherit;
+      color: inherit;
+    }
+
+    .token.comment,
+    .hljs-comment,
+    .hljs-quote {
+      color: inherit !important;
+      font-style: normal !important;
+      opacity: 1 !important;
+    }
+    @media (max-width: 720px) {
+      .page {
+        padding: 24px 14px 48px;
+      }
+
+      .article {
+        padding: 28px 22px;
+        border-radius: 8px;
+      }
+
+      .markdown-body {
+        font-size: 16px;
+      }
+    }
+  </style>
+  <script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$']]
+    }
+  };
+  </script>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+  <main class="page">
+    <article class="markdown-body article">
+      <h1>内网服务器如何访问公网</h1>
+<h2>背景</h2>
+<p>现有一台服务器（记为<code>S</code>），一台本地终端（记为<code>L</code>）。服务器无法访问公网。但具有局域网ip <code>a.b.c.d</code>。
+常规的上机方式为。<code>L</code>连接局域网，通过命令进入服务器。</p>
+<pre><code>ssh user@a.b.c.d
+</code></pre>
+<p>但即使这样连接成功，服务器依然无法访问公网。当执行</p>
+<pre><code>dnf install xxx
+pip install xxx
+wget xxx
+</code></pre>
+<p>这类命令时会报错。</p>
+<p>看上去，我们需要一台能同时与局域网和公网通信的设备，充当流量的中介。服务器可以把所有请求发给这台设备，设备与公网通信，将返回的信息转发给服务器即可。</p>
+<p>我们手上的<code>L</code>正是这样一台设备。</p>
+<h2>具体操作</h2>
+<p>在<code>L</code>的终端上敲命令：</p>
+<pre><code>ssh -R 7890:127.0.0.1:7891 user@a.b.c.d
+</code></pre>
+<p>进入服务器<code>S</code>，然后在<code>S</code>的终端上敲：</p>
+<pre><code>export http_proxy=127.0.0.1:7890
+export https_proxy=127.0.0.1:7890
+</code></pre>
+<p>此时，<code>S</code>和公网之间的通信渠道就已经介由<code>L</code>打通了。</p>
+<p>但要想用得顺利，还有以下环节必须保证。</p>
+<h2>本地代理</h2>
+<p>之前在<code>L</code>上执行的：</p>
+<pre><code>ssh -R 7890:127.0.0.1:7891 user@a.b.c.d
+</code></pre>
+<p>命令的意思是反向打通一个ssh隧道。远程设备<code>S</code>的7890端口的流量会转发到<code>L</code>的7891端口。可见这个命令的127.0.0.1代表的是<code>L</code>。</p>
+<p>那么问题来了，<code>L</code>上得有个进程监听7891端口接收这份流量，然后转发到公网。这个进程就是代理。</p>
+<p>因此你需要保证<code>L</code>正在运行一个代理，如果你已经有一些软件用来科学上网，就可以直接启动，不需要再下软件了。</p>
+<p>如果没有下载过类似软件，可以找Clash Verge Rev， sing-box之类的开源代理软件。注意，代理软件并不一定是科学上网软件，但科学上网软件一般都可以充当代理。</p>
+<p>下面问题又来了。建立反向隧道时，输入的7891端口是自定义的，如果代理软件可以指定端口，我把它调成监听7891即可。如果要用科学上网工具，这些软件一般都是无脑连接的，根本不知道它监听哪个端口。下面是一种解决方法，供参考：</p>
+<p>首先，我打开通过任务管理器-性能，右上角的三个点，打开资源监视器。进入网络标签页。往下翻到TCP连接列表。
+通过软件名称，就能找到进程的PID和监听的端口。通常可能会有多个。例如我这里的信息大致为显示：</p>
+<pre><code>  Proto  Local Address          Foreign Address        State           PID
+  TCP    0.0.0.0:19822          0.0.0.0:0              LISTENING       7492
+  TCP    127.0.0.1:19827        0.0.0.0:0              LISTENING       7492
+  TCP    127.0.0.1:19828        0.0.0.0:0              LISTENING       7492
+  TCP    [::]:19822             [::]:0                 LISTENING       7492
+
+# 事实上，上述命令是通过netstat -aon|findstr 7492命令获得的，但你在资源监视器里看到的内容和这个差不多。
+</code></pre>
+<p>有19822，19827，19828三个端口被被进程7492占用。同时19822占用IPV4和IPV6两个协议。通常我们用IPV4，以及监听本地回环(127.0.0.1)的连接。这样一来，可选范围就收敛到了19827和19828。</p>
+<p>不妨试试谁能跑通：</p>
+<pre><code>curl.exe -x http://127.0.0.1:19827 https://www.baidu.com
+# 报错： curl: (56) CONNECT tunnel failed, response 405
+curl.exe -x http://127.0.0.1:19828 https://www.baidu.com
+# 成功：返回内容为一个HTML文本
+</code></pre>
+<p>这就说明19828是正确的端口，可以用来转发流量。</p>
+<p>这样一来，建立ssh隧道时，我们改成</p>
+<pre><code>ssh -R 7890:127.0.0.1:19828 user@a.b.c.d
+</code></pre>
+<p>一切就对了。</p>
+<p>（题外话：有没有感觉像是在各个设备之间插管子，是的，就是这么简单，把管子插对即可）</p>
+<h2>服务器设置</h2>
+<p>如前文所言，<code>S</code>的7890端口现在与<code>L</code>的19828端口连上了。因此只要在服务器上敲命令，就能直接上公网。</p>
+<p>但不幸的是，照常执行命令，例如</p>
+<pre><code>sudo dnf install slurm
+</code></pre>
+<p>依然无法连接。原因在于我们没有显式地把流量转发到本机的7890端口。</p>
+<p>因此首先需要设好环境变量。</p>
+<pre><code>export http_proxy=127.0.0.1:7890
+export https_proxy=127.0.0.1:7890
+export all_proxy=socks5://127.0.0.1:7890 #可选
+</code></pre>
+<p>然后在执行命令时，声明使用代理即可，以下是几个例子：</p>
+<pre><code>pip install --proxy http://127.0.0.1:7890 XXX
+sudo dnf -E install XXX
+</code></pre>
+<p>大部分软件都有一个选项用于声明使用代理。只要明确把流量转发到7890端口上即可。</p>
+<p>如果仅是为了测试网络是否畅通，依然可以用curl:</p>
+<pre><code>curl -x http://127.0.0.1:7890 https://www.baidu.com
+</code></pre>
+<p>如果返回一个HTML文档，就说明网络跑通了。剩下的事情就是指挥具体软件。</p>
+<h3>Tips</h3>
+<ul>
+<li>之前的 <code>export http_proxy=127.0.0.1:7890</code>命令只生效于当前shell。可以写进.bashrc作持久化。</li>
+<li>7890是代理软件常用端口，就像ssh默认用22，postgresql默认用5432一样。这只是个习惯性动作，其实完全可以你自由发挥。只要保证各个环节的端口对上号即可（想象一下接水管）。</li>
+<li>注意到上面的命令，我一会儿用<code>curl</code>一会用<code>curl.exe</code>，这是因为前者是linux的命令，后者是powershell上的命令。同时需要注意的是，powershell有一些反人类的默认行为，powershell上输入<code>curl</code>时，也能工作，但实际执行的是<code>Invoke-WebRequest</code>这个命令，因此你会发现动不动就报错。实际上，<code>curl.exe</code>才是真正的curl。</li>
+</ul>
+
+    </article>
+  </main>
+    <script>
+  window.addEventListener("load", () => {
+    if (window.MathJax) {
+      MathJax.typesetPromise();
+    }
+  });
+  </script>
+</body>
+</html>
